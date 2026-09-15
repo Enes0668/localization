@@ -1,7 +1,44 @@
-﻿{
-  "Welcome": "Willkommen!",
-  "ErrorNotice": "Ihr erhaltener Fehler: {0}. Bitte beachten Sie.",
-  "OrderUpdated": "Bestellstatus #{0} wurde auf '{1}' aktualisiert.",
-  "ItemCount": "In Ihrem Warenkorb befinden sich {0} Artikel. Gesamtbetrag: {1} €.",
-  "NotFound": "Die gesuchte Ressource ({0}) wurde nicht gefunden."
+{
+  "Auth": {
+    "Login": "Anmelden",
+    "Logout": "Abmelden",
+    "Welcome": "Willkommen, {0}!",
+    "InvalidCredentials": "Ungültiger Benutzername oder Passwort.",
+    "Unauthorized": "Sie müssen angemeldet sein, um diese Aktion durchzuführen."
+  },
+  "Errors": {
+    "NotFound": "Die gesuchte Ressource ({0}) wurde nicht gefunden.",
+    "Unauthorized": "Sie haben keine Berechtigung, diese Aktion durchzuführen.",
+    "ServerError": "Serverfehler: {0}. Bitte versuchen Sie es später erneut.",
+    "Notice": "Ihr erhaltener Fehler: {0}. Bitte beachten Sie.",
+    "ValidationFailed": "Validierung fehlgeschlagen. Bitte überprüfen Sie das Formular."
+  },
+  "Validation": {
+    "Required": "Das Feld '{0}' ist erforderlich.",
+    "MinLength": "Das Feld '{0}' muss mindestens {1} Zeichen lang sein.",
+    "MaxLength": "Das Feld '{0}' darf höchstens {1} Zeichen lang sein.",
+    "InvalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+    "InvalidPhone": "Die Telefonnummer muss im Format {0} angegeben werden."
+  },
+  "Orders": {
+    "Created": "Bestellung #{0} wurde erstellt.",
+    "Updated": "Der Status von Bestellung #{0} wurde auf '{1}' aktualisiert.",
+    "Cancelled": "Bestellung #{0} wurde storniert. Rückerstattungsbetrag: {1} €.",
+    "NotFound": "Bestellung #{0} wurde nicht gefunden."
+  },
+  "Cart": {
+    "ItemAdded": "'{0}' wurde Ihrem Warenkorb hinzugefügt.",
+    "ItemRemoved": "'{0}' wurde aus Ihrem Warenkorb entfernt.",
+    "Summary": "Sie haben {0} Artikel in Ihrem Warenkorb. Gesamtbetrag: {1} €.",
+    "Empty": "Ihr Warenkorb ist leer."
+  },
+  "Payment": {
+    "Success": "Ihre Zahlung von {0} € wurde erfolgreich empfangen. Transaktions-ID: {1}.",
+    "Failed": "Zahlung fehlgeschlagen. Fehlercode: {0}.",
+    "Refund": "Ihre Rückerstattung von {0} € wird innerhalb von {1} Werktagen bearbeitet."
+  },
+  "Notifications": {
+    "EmailSent": "Eine E-Mail wurde an {0} gesendet.",
+    "SmsSent": "Eine SMS wurde an {0} gesendet."
+  }
 }

@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Localization Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f172a;
+      --surface:   #1e293b;
+      --surface2:  #162032;
+      --border:    #2d3f55;
+      --primary:   #3b82f6;
+      --primary-h: #2563eb;
+      --success:   #4ade80;
+      --danger:    #f87171;
+      --warn:      #fbbf24;
+      --text:      #e2e8f0;
+      --muted:     #94a3b8;
+      --radius:    10px;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ══════════════════════════════
+       LOGIN
+    ══════════════════════════════ */
+    #login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      background:
+        radial-gradient(ellipse at 20% 50%, rgba(59,130,246,.08) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(99,102,241,.06) 0%, transparent 50%),
+        var(--bg);
+    }
+
+    .login-wrap {
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .login-logo .icon {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 14px;
+      box-shadow: 0 8px 24px rgba(59,130,246,.3);
+    }
+
+    .login-logo h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -.02em;
+    }
+
+    .login-logo p {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 28px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 7px;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 11px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 0.92rem;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 12px;
+      margin-top: 6px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      box-shadow: 0 4px 14px rgba(59,130,246,.3);
+    }
+
+    .btn-login:hover   { opacity: .9; }
+    .btn-login:active  { transform: scale(.99); }
+    .btn-login:disabled { opacity: .55; cursor: not-allowed; }
+
+    .login-error {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: rgba(248,113,113,.08);
+      border: 1px solid rgba(248,113,113,.3);
+      border-radius: var(--radius);
+      color: var(--danger);
+      font-size: 0.82rem;
+      display: none;
+    }
+
+    /* ══════════════════════════════
+       APP SHELL
+    ══════════════════════════════ */
+    #app {
+      display: none;
+      min-height: 100vh;
+      flex-direction: column;
+    }
+
+    /* TOPBAR */
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      height: 56px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+
+    .topbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .topbar-brand .dot {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px 5px 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 0.8rem;
+    }
+
+    .user-avatar {
+      width: 22px; height: 22px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .user-pill .role-badge {
+      padding: 1px 7px;
+      background: rgba(251,191,36,.15);
+      border: 1px solid rgba(251,191,36,.3);
+      border-radius: 10px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--warn);
+    }
+
+    .btn-logout {
+      padding: 6px 14px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all .2s;
+    }
+
+    .btn-logout:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    /* LAYOUT */
+    .layout {
+      display: flex;
+      flex: 1;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 210px;
+      min-width: 210px;
+      background: var(--surface2);
+      border-right: 1px solid var(--border);
+      padding: 20px 0;
+      overflow-y: auto;
+    }
+
+    .sidebar-section {
+      padding: 0 14px;
+      margin-bottom: 24px;
+    }
+
+    .sidebar-label {
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      font-weight: 600;
+      margin-bottom: 8px;
+      padding-left: 2px;
+    }
+
+    /* Dil butonları */
+    .lang-list { display: flex; flex-direction: column; gap: 2px; }
+
+    .lang-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: var(--muted);
+      border: 1px solid transparent;
+      background: none;
+      width: 100%;
+      text-align: left;
+      transition: all .15s;
+    }
+
+    .lang-item:hover { background: rgba(255,255,255,.04); color: var(--text); }
+
+    .lang-item.active {
+      background: rgba(59,130,246,.1);
+      border-color: rgba(59,130,246,.25);
+      color: #7dd3fc;
+    }
+
+    .lang-item .flag { font-size: 1rem; }
+    .lang-item .code { font-size: 0.7rem; color: inherit; opacity: .7; margin-left: auto; font-family: monospace; }
+
+    /* Hızlı örnekler */
+    .example-list { display: flex; flex-direction: column; gap: 1px; }
+
+    .example-item {
+      padding: 8px 10px;
+      border-radius: 7px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      width: 100%;
+      text-align: left;
+      transition: background .15s;
+    }
+
+    .example-item:hover { background: rgba(255,255,255,.04); }
+
+    .example-item .ex-label {
+      display: block;
+      font-size: 0.82rem;
+      color: var(--text);
+    }
+
+    .example-item .ex-key {
+      display: block;
+      font-size: 0.7rem;
+      font-family: monospace;
+      color: #475569;
+      margin-top: 2px;
+    }
+
+    /* CONTENT */
+    .content {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* CARDS */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    /* STATUS BAR */
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .status-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--muted);
+    }
+
+    .status-chip.ok { border-color: rgba(74,222,128,.3); color: var(--success); }
+
+    .status-chip .dot-pulse {
+      width: 6px; height: 6px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .4; }
+    }
+
+    /* QUERY FORM */
+    .query-form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .query-form input {
+      flex: 1;
+      min-width: 110px;
+      padding: 10px 13px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 0.85rem;
+      transition: border-color .2s;
+    }
+
+    .query-form input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .btn-run {
+      padding: 10px 22px;
+      background: var(--primary);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .2s;
+    }
+
+    .btn-run:hover { background: var(--primary-h); }
+
+    /* RESULT */
+    .result-box {
+      margin-top: 14px;
+      padding: 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.82rem;
+      line-height: 1.7;
+      min-height: 56px;
+      white-space: pre-wrap;
+      transition: border-color .2s;
+    }
+
+    .result-box.idle   { color: var(--muted); }
+    .result-box.ok     { border-color: rgba(74,222,128,.35); color: var(--success); }
+    .result-box.err    { border-color: rgba(248,113,113,.35); color: var(--danger); }
+
+    .result-url {
+      margin-top: 7px;
+      font-family: monospace;
+      font-size: 0.7rem;
+      color: #334155;
+      word-break: break-all;
+    }
+
+    /* KEY BROWSER */
+    .keys-toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .keys-toolbar input {
+      flex: 1;
+      padding: 8px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 0.83rem;
+    }
+
+    .keys-toolbar input:focus { outline: none; border-color: var(--primary); }
+
+    .btn-load {
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      white-space: nowrap;
+      transition: all .2s;
+    }
+
+    .btn-load:hover { border-color: var(--primary); color: var(--primary); }
+
+    .keys-meta {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .keys-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .key-chip {
+      padding: 4px 11px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-family: monospace;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .15s;
+    }
+
+    .key-chip:hover { border-color: var(--primary); color: #7dd3fc; background: rgba(59,130,246,.06); }
+
+    @media (max-width: 640px) {
+      .sidebar { display: none; }
+      .content { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     LOGIN
+══════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-wrap">
+
+    <div class="login-logo">
+      <div class="icon">🌍</div>
+      <h1>Localization Manager</h1>
+      <p>Çok dilli içerik yönetim paneli</p>
+    </div>
+
+    <div class="login-card">
+      <div class="form-group">
+        <label>Kullanıcı Adı</label>
+        <input id="inp-user" type="text" autocomplete="username" placeholder="Kullanıcı adınız" />
+      </div>
+      <div class="form-group">
+        <label>Şifre</label>
+        <input id="inp-pass" type="password" autocomplete="current-password" placeholder="••••••••" />
+      </div>
+      <button class="btn-login" id="btn-login" onclick="doLogin()">Giriş Yap</button>
+      <div class="login-error" id="login-err">Kullanıcı adı veya şifre hatalı.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     APP
+══════════════════════════════════ -->
+<div id="app">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="dot">🌍</div>
+      Localization Manager
+    </div>
+    <div class="topbar-right">
+      <div class="user-pill">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <span id="user-name">—</span>
+        <span class="role-badge" id="user-role">—</span>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Çıkış</button>
+    </div>
+  </header>
+
+  <!-- LAYOUT -->
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Dil</div>
+        <div class="lang-list">
+          <button class="lang-item active" onclick="setLang('tr-TR', this)">
+            <span class="flag">🇹🇷</span> Türkçe <span class="code">tr-TR</span>
+          </button>
+          <button class="lang-item" onclick="setLang('en-US', this)">
+            <span class="flag">🇺🇸</span> English <span class="code">en-US</span>
+          </button>
+          <button class="lang-item" onclick="setLang('de-DE', this)">
+            <span class="flag">🇩🇪</span> Deutsch <span class="code">de-DE</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Hızlı Sorgular</div>
+        <div class="example-list">
+          <button class="example-item" onclick="quickQuery('Auth.Login')">
+            <span class="ex-label">Giriş Yap</span>
+            <span class="ex-key">Auth.Login</span>
+          </button>
+          <button class="example-item" onclick="quickQuery('Auth.Welcome', ['Kullanıcı'])">
+            <span class="ex-label">Hoş Geldin</span>
+            <span class="ex-key">Auth.Welcome</span>
+          </button>
+          <button class="example-item" onclick="quickQuery('Errors.Notice', ['404'])">
+            <span class="ex-label">Hata Bildirimi</span>
+            <span class="ex-key">Errors.Notice</span>
+          </button>
+          <button class="example-item" onclick="quickQuery('Validation.MinLength', ['Şifre','8'])">
+            <span class="ex-label">Min. Uzunluk</span>
+            <span class="ex-key">Validation.MinLength</span>
+          </button>
+          <button class="example-item" onclick="quickQuery('Orders.Updated', ['9876','Shipped'])">
+            <span class="ex-label">Sipariş Güncellendi</span>
+            <span class="ex-key">Orders.Updated</span>
+          </button>
+          <button class="example-item" onclick="quickQuery('Payment.Success', ['450','TXN-001'])">
+            <span class="ex-label">Ödeme Başarılı</span>
+            <span class="ex-key">Payment.Success</span>
+          </button>
+          <button class="example-item" onclick="quickQuery('Cart.Summary', ['3','249.90'])">
+            <span class="ex-label">Sepet Özeti</span>
+            <span class="ex-key">Cart.Summary</span>
+          </button>
+          <button class="example-item" onclick="quickQuery('Notifications.EmailSent', ['ornek@mail.com'])">
+            <span class="ex-label">E-posta Gönderildi</span>
+            <span class="ex-key">Notifications.EmailSent</span>
+          </button>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- CONTENT -->
+    <main class="content">
+
+      <!-- STATUS -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px">Bağlantı Durumu</div>
+        <div class="status-row">
+          <div class="status-chip ok">
+            <span class="dot-pulse"></span>
+            API Bağlantısı Aktif
+          </div>
+          <div class="status-chip ok">✓ Oturum Geçerli</div>
+          <div class="status-chip" id="chip-expiry">⏱ —</div>
+          <div class="status-chip" id="chip-lang">🌐 tr-TR</div>
+        </div>
+      </div>
+
+      <!-- SORGU -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Çeviri Sorgula</div>
+        </div>
+        <div class="query-form">
+          <input id="q-key" type="text" placeholder="Key  (örn: Orders.Updated)" value="Cart.Summary" />
+          <input id="q-p0"  type="text" placeholder="p0 — 1. parametre" value="3" />
+          <input id="q-p1"  type="text" placeholder="p1 — 2. parametre" value="249.90" />
+          <button class="btn-run" onclick="customQuery()">Sorgula →</button>
+        </div>
+        <div class="result-box idle" id="result-box">Sol panelden bir örnek seçin veya yukarıya key yazıp Sorgula'ya basın...</div>
+        <div class="result-url" id="result-url"></div>
+      </div>
+
+      <!-- KEY BROWSER -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Key Kütüphanesi</div>
+          <button class="btn-load" onclick="loadKeys()">Yükle</button>
+        </div>
+        <div class="keys-toolbar">
+          <input type="text" placeholder="Key ara... (örn: Auth, Cart, Error)" oninput="filterKeys(this.value)" />
+        </div>
+        <div class="keys-meta" id="keys-meta"></div>
+        <div class="keys-grid" id="keys-grid"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:5276';
+  let lang    = 'tr-TR';
+  let allKeys = [];
+
+  // ── STORAGE ─────────────────────────────────────────────────
+  const store = {
+    get:   k => localStorage.getItem(k),
+    set:   (k,v) => localStorage.setItem(k, v),
+    clear: () => ['_tok','_usr','_rol','_ts'].forEach(k => localStorage.removeItem(k))
+  };
+
+  // ── BOOT ─────────────────────────────────────────────────────
+  window.onload = () => {
+    document.getElementById('inp-pass').addEventListener('keydown', e => {
+      if (e.key === 'Enter') doLogin();
+    });
+    document.getElementById('inp-user').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('inp-pass').focus();
+    });
+    store.get('_tok') ? showApp() : showLogin();
+  };
+
+  // ── LOGIN / LOGOUT ───────────────────────────────────────────
+  async function doLogin() {
+    const username = document.getElementById('inp-user').value.trim();
+    const password = document.getElementById('inp-pass').value;
+    const btn      = document.getElementById('btn-login');
+    const errEl    = document.getElementById('login-err');
+
+    if (!username || !password) return;
+    btn.disabled = true;
+    btn.textContent = 'Giriş yapılıyor...';
+    errEl.style.display = 'none';
+
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      if (!res.ok) throw new Error();
+      const d = await res.json();
+      store.set('_tok', d.token);
+      store.set('_usr', d.username);
+      store.set('_rol', d.role);
+      store.set('_ts',  Date.now());
+      showApp();
+    } catch {
+      errEl.style.display = 'block';
+      document.getElementById('inp-pass').value = '';
+      document.getElementById('inp-pass').focus();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Giriş Yap';
+    }
+  }
+
+  function doLogout() {
+    store.clear();
+    allKeys = [];
+    document.getElementById('keys-grid').innerHTML = '';
+    document.getElementById('keys-meta').textContent = '';
+    document.getElementById('result-box').className = 'result-box idle';
+    document.getElementById('result-box').textContent = 'Sol panelden bir örnek seçin...';
+    showLogin();
+  }
+
+  function showLogin() {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    setTimeout(() => document.getElementById('inp-user').focus(), 100);
+  }
+
+  function showApp() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+
+    const usr = store.get('_usr') || '';
+    const rol = store.get('_rol') || '';
+    document.getElementById('user-name').textContent = usr;
+    document.getElementById('user-role').textContent = rol;
+    document.getElementById('user-avatar').textContent = usr[0]?.toUpperCase() || '?';
+
+    const mins = Math.max(0, 60 - Math.floor((Date.now() - parseInt(store.get('_ts') || 0)) / 60000));
+    document.getElementById('chip-expiry').textContent = `⏱ ${mins} dk kaldı`;
+  }
+
+  // ── DİL ─────────────────────────────────────────────────────
+  function setLang(l, btn) {
+    lang = l;
+    document.querySelectorAll('.lang-item').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('chip-lang').textContent = `🌐 ${l}`;
+    if (allKeys.length) loadKeys();
+  }
+
+  // ── API ──────────────────────────────────────────────────────
+  async function apiFetch(url) {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${store.get('_tok')}` }
+    });
+    if (res.status === 401) { store.clear(); showLogin(); throw new Error('Oturum sona erdi.'); }
+    return res;
+  }
+
+  // ── SORGU ────────────────────────────────────────────────────
+  async function query(key, params = []) {
+    let url = `${API}/api/localize/${encodeURIComponent(key)}?culture=${lang}`;
+    params.forEach((p, i) => { if (p !== '') url += `&p${i}=${encodeURIComponent(p)}`; });
+
+    document.getElementById('q-key').value = key;
+    document.getElementById('q-p0').value  = params[0] || '';
+    document.getElementById('q-p1').value  = params[1] || '';
+
+    const box = document.getElementById('result-box');
+    const urlEl = document.getElementById('result-url');
+    box.className = 'result-box idle';
+    box.textContent = 'Sorgulanıyor...';
+    urlEl.textContent = '';
+
+    try {
+      const res = await apiFetch(url);
+      const data = await res.json();
+      box.className = 'result-box ok';
+      box.textContent = JSON.stringify(data, null, 2);
+      urlEl.textContent = '→ ' + url;
+    } catch (e) {
+      box.className = 'result-box err';
+      box.textContent = '❌ ' + e.message;
+    }
+  }
+
+  const quickQuery  = (key, params = []) => query(key, params);
+  const customQuery = () => {
+    const key = document.getElementById('q-key').value.trim();
+    if (!key) return;
+    query(key, [
+      document.getElementById('q-p0').value.trim(),
+      document.getElementById('q-p1').value.trim()
+    ]);
+  };
+
+  // ── KEY BROWSER ──────────────────────────────────────────────
+  async function loadKeys() {
+    const meta = document.getElementById('keys-meta');
+    const grid = document.getElementById('keys-grid');
+    meta.textContent = 'Yükleniyor...';
+    grid.innerHTML   = '';
+
+    try {
+      const res  = await apiFetch(`${API}/api/keys?culture=${lang}`);
+      const data = await res.json();
+      allKeys = data.keys;
+      meta.textContent = `${data.count} key · ${data.culture}`;
+      renderKeys(allKeys);
+    } catch (e) {
+      meta.textContent = '❌ ' + e.message;
+    }
+  }
+
+  function renderKeys(keys) {
+    const grid = document.getElementById('keys-grid');
+    grid.innerHTML = '';
+    keys.forEach(k => {
+      const chip = document.createElement('span');
+      chip.className   = 'key-chip';
+      chip.textContent = k;
+      chip.onclick     = () => {
+        document.getElementById('q-key').value = k;
+        document.getElementById('q-p0').value  = '';
+        document.getElementById('q-p1').value  = '';
+        customQuery();
+        document.querySelector('.content').scrollTo({ top: 0, behavior: 'smooth' });
+      };
+      grid.appendChild(chip);
+    });
+  }
+
+  function filterKeys(term) {
+    if (!allKeys.length) return;
+    const f = term ? allKeys.filter(k => k.toLowerCase().includes(term.toLowerCase())) : allKeys;
+    document.getElementById('keys-meta').textContent = `${f.length} / ${allKeys.length} key`;
+    renderKeys(f);
+  }
+</script>
+
+</body>
+</html>

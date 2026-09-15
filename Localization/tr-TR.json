@@ -1,7 +1,44 @@
-﻿{
-  "Welcome": "Hoş geldiniz!",
-  "ErrorNotice": "Aldığınız Hata: {0}. Dikkat ediniz.",
-  "OrderUpdated": "Sipariş #{0} durumu '{1}' olarak güncellendi.",
-  "ItemCount": "Sepetinizde {0} adet ürün bulunmaktadır. Toplam tutar: {1} TL.",
-  "NotFound": "Aradığınız kaynak ({0}) bulunamadı."
+{
+  "Auth": {
+    "Login": "Giriş yap",
+    "Logout": "Çıkış yap",
+    "Welcome": "Hoş geldiniz, {0}!",
+    "InvalidCredentials": "Kullanıcı adı veya şifre hatalı.",
+    "Unauthorized": "Bu işlemi gerçekleştirmek için giriş yapmalısınız."
+  },
+  "Errors": {
+    "NotFound": "Aradığınız kaynak ({0}) bulunamadı.",
+    "Unauthorized": "Bu işlem için yetkiniz yok.",
+    "ServerError": "Sunucu hatası: {0}. Lütfen daha sonra tekrar deneyin.",
+    "Notice": "Aldığınız Hata: {0}. Dikkat ediniz.",
+    "ValidationFailed": "Doğrulama hatası. Lütfen formu kontrol ediniz."
+  },
+  "Validation": {
+    "Required": "'{0}' alanı zorunludur.",
+    "MinLength": "'{0}' alanı en az {1} karakter olmalıdır.",
+    "MaxLength": "'{0}' alanı en fazla {1} karakter olabilir.",
+    "InvalidEmail": "Geçerli bir e-posta adresi giriniz.",
+    "InvalidPhone": "Telefon numarası {0} formatında olmalıdır."
+  },
+  "Orders": {
+    "Created": "#{0} numaralı sipariş oluşturuldu.",
+    "Updated": "Sipariş #{0} durumu '{1}' olarak güncellendi.",
+    "Cancelled": "Sipariş #{0} iptal edildi. İade tutarı: {1} TL.",
+    "NotFound": "#{0} numaralı sipariş bulunamadı."
+  },
+  "Cart": {
+    "ItemAdded": "'{0}' sepetinize eklendi.",
+    "ItemRemoved": "'{0}' sepetinizden çıkarıldı.",
+    "Summary": "Sepetinizde {0} ürün var. Toplam: {1} TL.",
+    "Empty": "Sepetiniz boş."
+  },
+  "Payment": {
+    "Success": "{0} TL ödemeniz başarıyla alındı. İşlem no: {1}.",
+    "Failed": "Ödeme başarısız. Hata kodu: {0}.",
+    "Refund": "{0} TL iade işleminiz {1} iş günü içinde tamamlanacak."
+  },
+  "Notifications": {
+    "EmailSent": "{0} adresine e-posta gönderildi.",
+    "SmsSent": "{0} numarasına SMS gönderildi."
+  }
 }

@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
 
@@ -8,12 +8,14 @@ public class JsonStringLocalizer : IJsonStringLocalizer
 {
     private readonly IWebHostEnvironment _env;
     private readonly string _localizationPath;
+
+    // Cache: culture adı → düzleştirilmiş anahtar/değer sözlüğü
+    // Örnek: "tr-TR" → { "Auth.Login": "Giriş yap", "Errors.NotFound": "... bulunamadı." }
     private static readonly ConcurrentDictionary<string, Dictionary<string, string>> Cache = new();
 
     public JsonStringLocalizer(IWebHostEnvironment env)
     {
         _env = env;
-        // Furkan Bey'in istediği gibi bağımsız "Localization" klasöründen okuma yapılır
         _localizationPath = Path.Combine(_env.ContentRootPath, "Localization");
     }
 
@@ -56,6 +58,16 @@ public class JsonStringLocalizer : IJsonStringLocalizer
         }
     }
 
+    /// <summary>
+    /// Mevcut kültür için yüklenmiş tüm key'leri döner.
+    /// Kategorili yapıda: "Auth.Login", "Errors.NotFound" gibi düzleştirilmiş anahtarlar.
+    /// </summary>
+    public IEnumerable<string> GetAllKeys()
+    {
+        var culture = CultureInfo.CurrentUICulture.Name;
+        return GetDictionaryForCulture(culture).Keys;
+    }
+
     private Dictionary<string, string> GetDictionaryForCulture(string cultureName)
     {
         if (Cache.TryGetValue(cultureName, out var cachedDict))
@@ -65,7 +77,7 @@ public class JsonStringLocalizer : IJsonStringLocalizer
 
         var filePath = Path.Combine(_localizationPath, $"{cultureName}.json");
 
-        // Tam eşleşme yoksa (örneğin "tr" gelip dosya "tr-TR.json" ise veya tam tersi)
+        // Tam eşleşme yoksa dil kodu prefix'iyle eşleşen dosyayı bul (örn. "de" → "de-DE.json")
         if (!File.Exists(filePath))
         {
             var fallbackFiles = Directory.GetFiles(_localizationPath, "*.json");
@@ -88,22 +100,68 @@ public class JsonStringLocalizer : IJsonStringLocalizer
             try
             {
                 var json = File.ReadAllText(filePath);
-                var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(json, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                }) ?? new Dictionary<string, string>();
+                using var document = JsonDocument.Parse(json);
+
+                // İç içe (nested) JSON yapısını "Kategori.Anahtar" → "Değer" şeklinde düzleştir
+                var dict = FlattenJson(document.RootElement);
 
                 Cache[cultureName] = dict;
                 return dict;
             }
             catch
             {
-                // JSON okuma hatası durumunda boş sözlük dön
+                // JSON okuma veya parse hatası durumunda boş sözlük dön
             }
         }
 
         var emptyDict = new Dictionary<string, string>();
         Cache[cultureName] = emptyDict;
         return emptyDict;
+    }
+
+    /// <summary>
+    /// İç içe JSON nesnesini nokta notasyonuyla düz sözlüğe çevirir.
+    /// Örnek: { "Auth": { "Login": "Giriş yap" } } → { "Auth.Login": "Giriş yap" }
+    /// </summary>
+    private static Dictionary<string, string> FlattenJson(JsonElement element, string prefix = "")
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var property in element.EnumerateObject())
+        {
+            var fullKey = string.IsNullOrEmpty(prefix)
+                ? property.Name
+                : $"{prefix}.{property.Name}";
+
+            if (property.Value.ValueKind == JsonValueKind.Object)
+            {
+                // Alt nesneye özyinelemeli dallan
+                foreach (var nested in FlattenJson(property.Value, fullKey))
+                {
+                    result[nested.Key] = nested.Value;
+                }
+            }
+            else if (property.Value.ValueKind == JsonValueKind.String)
+            {
+                result[fullKey] = property.Value.GetString() ?? fullKey;
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Belirtilen kültür için cache'i temizler. Sonraki istekte JSON yeniden yüklenir.
+    /// </summary>
+    public static void ClearCache(string? cultureName = null)
+    {
+        if (cultureName != null)
+        {
+            Cache.TryRemove(cultureName, out _);
+        }
+        else
+        {
+            Cache.Clear();
+        }
     }
 }

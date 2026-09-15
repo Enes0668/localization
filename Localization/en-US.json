@@ -1,7 +1,44 @@
-﻿{
-  "Welcome": "Welcome!",
-  "ErrorNotice": "The error you received: {0}. Please pay attention.",
-  "OrderUpdated": "Order #{0} status has been updated to '{1}'.",
-  "ItemCount": "There are {0} item(s) in your cart. Total amount: ${1}.",
-  "NotFound": "The resource you are looking for ({0}) was not found."
+{
+  "Auth": {
+    "Login": "Sign in",
+    "Logout": "Sign out",
+    "Welcome": "Welcome, {0}!",
+    "InvalidCredentials": "Invalid username or password.",
+    "Unauthorized": "You must be logged in to perform this action."
+  },
+  "Errors": {
+    "NotFound": "The resource you are looking for ({0}) was not found.",
+    "Unauthorized": "You do not have permission to perform this action.",
+    "ServerError": "Server error: {0}. Please try again later.",
+    "Notice": "The error you received: {0}. Please pay attention.",
+    "ValidationFailed": "Validation failed. Please check the form."
+  },
+  "Validation": {
+    "Required": "The '{0}' field is required.",
+    "MinLength": "The '{0}' field must be at least {1} characters long.",
+    "MaxLength": "The '{0}' field may not be longer than {1} characters.",
+    "InvalidEmail": "Please enter a valid email address.",
+    "InvalidPhone": "Phone number must be in {0} format."
+  },
+  "Orders": {
+    "Created": "Order #{0} has been created.",
+    "Updated": "Order #{0} status has been updated to '{1}'.",
+    "Cancelled": "Order #{0} has been cancelled. Refund amount: ${1}.",
+    "NotFound": "Order #{0} was not found."
+  },
+  "Cart": {
+    "ItemAdded": "'{0}' has been added to your cart.",
+    "ItemRemoved": "'{0}' has been removed from your cart.",
+    "Summary": "You have {0} item(s) in your cart. Total: ${1}.",
+    "Empty": "Your cart is empty."
+  },
+  "Payment": {
+    "Success": "Your payment of ${0} was received successfully. Transaction ID: {1}.",
+    "Failed": "Payment failed. Error code: {0}.",
+    "Refund": "Your refund of ${0} will be processed within {1} business days."
+  },
+  "Notifications": {
+    "EmailSent": "An email has been sent to {0}.",
+    "SmsSent": "An SMS has been sent to {0}."
+  }
 }

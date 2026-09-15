@@ -1,0 +1,10 @@
+# Build çıktıları
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+
+# Geçici dosyalar
+demo.html
