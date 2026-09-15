@@ -1,0 +1,7 @@
+﻿{
+  "Welcome": "Hoş geldiniz!",
+  "ErrorNotice": "Aldığınız Hata: {0}. Dikkat ediniz.",
+  "OrderUpdated": "Sipariş #{0} durumu '{1}' olarak güncellendi.",
+  "ItemCount": "Sepetinizde {0} adet ürün bulunmaktadır. Toplam tutar: {1} TL.",
+  "NotFound": "Aradığınız kaynak ({0}) bulunamadı."
+}

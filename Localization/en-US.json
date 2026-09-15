@@ -1,0 +1,7 @@
+﻿{
+  "Welcome": "Welcome!",
+  "ErrorNotice": "The error you received: {0}. Please pay attention.",
+  "OrderUpdated": "Order #{0} status has been updated to '{1}'.",
+  "ItemCount": "There are {0} item(s) in your cart. Total amount: ${1}.",
+  "NotFound": "The resource you are looking for ({0}) was not found."
+}

@@ -1,0 +1,7 @@
+﻿{
+  "Welcome": "Willkommen!",
+  "ErrorNotice": "Ihr erhaltener Fehler: {0}. Bitte beachten Sie.",
+  "OrderUpdated": "Bestellstatus #{0} wurde auf '{1}' aktualisiert.",
+  "ItemCount": "In Ihrem Warenkorb befinden sich {0} Artikel. Gesamtbetrag: {1} €.",
+  "NotFound": "Die gesuchte Ressource ({0}) wurde nicht gefunden."
+}
