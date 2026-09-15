@@ -2,43 +2,306 @@
   "Auth": {
     "Login": "Sign in",
     "Logout": "Sign out",
+    "Register": "Sign up",
     "Welcome": "Welcome, {0}!",
     "InvalidCredentials": "Invalid username or password.",
-    "Unauthorized": "You must be logged in to perform this action."
+    "Unauthorized": "You must be logged in to perform this action.",
+    "SessionExpired": "Your session has expired. Please sign in again.",
+    "AccountLocked": "Your account has been locked. Please contact your administrator.",
+    "EmailNotVerified": "Your email address has not been verified. Please check your inbox.",
+    "PasswordResetSent": "A password reset link has been sent to {0}.",
+    "PasswordResetSuccess": "Your password has been reset successfully.",
+    "PasswordChanged": "Your password has been changed successfully.",
+    "TwoFactorRequired": "Please enter your two-factor authentication code.",
+    "TwoFactorInvalid": "The verification code is invalid or has expired."
+  },
+  "User": {
+    "Created": "Your account has been created successfully.",
+    "Updated": "Your profile has been updated.",
+    "Deleted": "Your account has been deleted.",
+    "NotFound": "User not found.",
+    "AlreadyExists": "An account with the email address {0} already exists.",
+    "RoleChanged": "User {0}'s role has been changed to '{1}'.",
+    "Banned": "User {0} has been banned.",
+    "Unbanned": "User {0} has been unbanned.",
+    "PasswordMismatch": "Passwords do not match.",
+    "ProfilePictureUpdated": "Your profile picture has been updated."
   },
   "Errors": {
     "NotFound": "The resource you are looking for ({0}) was not found.",
     "Unauthorized": "You do not have permission to perform this action.",
+    "Forbidden": "You do not have access to this page.",
     "ServerError": "Server error: {0}. Please try again later.",
     "Notice": "The error you received: {0}. Please pay attention.",
-    "ValidationFailed": "Validation failed. Please check the form."
+    "ValidationFailed": "Validation failed. Please check the form.",
+    "BadRequest": "Invalid request. Please check the information you entered.",
+    "Conflict": "This record already exists: {0}.",
+    "Timeout": "The request timed out. Please try again.",
+    "ServiceUnavailable": "The service is currently unavailable. Please try again later.",
+    "TooManyRequests": "Too many requests. Please wait {0} seconds.",
+    "PayloadTooLarge": "The payload is too large. Maximum size: {0}.",
+    "Unhandled": "An unexpected error occurred. Please try again."
   },
   "Validation": {
     "Required": "The '{0}' field is required.",
     "MinLength": "The '{0}' field must be at least {1} characters long.",
     "MaxLength": "The '{0}' field may not be longer than {1} characters.",
+    "MinValue": "The '{0}' field must be at least {1}.",
+    "MaxValue": "The '{0}' field may not be greater than {1}.",
     "InvalidEmail": "Please enter a valid email address.",
-    "InvalidPhone": "Phone number must be in {0} format."
+    "InvalidPhone": "Phone number must be in {0} format.",
+    "InvalidUrl": "Please enter a valid URL.",
+    "InvalidDate": "Please enter a valid date.",
+    "InvalidFormat": "The '{0}' field is not in a valid format.",
+    "MustBeNumeric": "The '{0}' field must contain only numbers.",
+    "MustBeAlpha": "The '{0}' field must contain only letters.",
+    "PasswordStrength": "Password must contain at least one uppercase letter, one lowercase letter, and one number.",
+    "DateMustBeFuture": "The '{0}' date must be in the future.",
+    "DateMustBePast": "The '{0}' date must be in the past.",
+    "FileTooLarge": "File size is too large. Maximum {0} MB allowed.",
+    "InvalidFileType": "Invalid file type. Allowed types: {0}.",
+    "UniqueConstraint": "The value '{0}' is already in use.",
+    "MustAgree": "You must agree to the '{0}' terms to continue."
+  },
+  "UI": {
+    "Save": "Save",
+    "Cancel": "Cancel",
+    "Delete": "Delete",
+    "Edit": "Edit",
+    "Add": "Add",
+    "Update": "Update",
+    "Confirm": "Confirm",
+    "Close": "Close",
+    "Back": "Back",
+    "Next": "Next",
+    "Submit": "Submit",
+    "Reset": "Reset",
+    "Search": "Search...",
+    "Filter": "Filter",
+    "Clear": "Clear",
+    "Loading": "Loading...",
+    "Processing": "Processing...",
+    "NoResults": "No results found.",
+    "NoData": "No data available yet.",
+    "SelectOption": "Select...",
+    "All": "All",
+    "Yes": "Yes",
+    "No": "No",
+    "Ok": "OK",
+    "Retry": "Retry",
+    "Refresh": "Refresh",
+    "Download": "Download",
+    "Upload": "Upload",
+    "Preview": "Preview",
+    "Print": "Print",
+    "Share": "Share",
+    "Copy": "Copy",
+    "Copied": "Copied!",
+    "ExpandAll": "Expand All",
+    "CollapseAll": "Collapse All"
+  },
+  "Status": {
+    "Active": "Active",
+    "Inactive": "Inactive",
+    "Pending": "Pending",
+    "Approved": "Approved",
+    "Rejected": "Rejected",
+    "Cancelled": "Cancelled",
+    "Completed": "Completed",
+    "InProgress": "In Progress",
+    "Draft": "Draft",
+    "Published": "Published",
+    "Archived": "Archived",
+    "Expired": "Expired",
+    "Suspended": "Suspended",
+    "Failed": "Failed",
+    "Refunded": "Refunded"
   },
   "Orders": {
     "Created": "Order #{0} has been created.",
     "Updated": "Order #{0} status has been updated to '{1}'.",
     "Cancelled": "Order #{0} has been cancelled. Refund amount: ${1}.",
-    "NotFound": "Order #{0} was not found."
+    "NotFound": "Order #{0} was not found.",
+    "Shipped": "Order #{0} has been shipped. Tracking number: {1}.",
+    "Delivered": "Order #{0} has been delivered.",
+    "Returned": "A return request has been created for order #{0}.",
+    "Summary": "Total {0} orders, total amount: ${1}."
   },
   "Cart": {
     "ItemAdded": "'{0}' has been added to your cart.",
     "ItemRemoved": "'{0}' has been removed from your cart.",
+    "ItemUpdated": "'{0}' quantity updated to {1}.",
     "Summary": "You have {0} item(s) in your cart. Total: ${1}.",
-    "Empty": "Your cart is empty."
+    "Empty": "Your cart is empty.",
+    "Cleared": "Your cart has been cleared.",
+    "MaxQuantity": "You can add a maximum of {1} units of '{0}'.",
+    "OutOfStock": "'{0}' does not have sufficient stock."
   },
   "Payment": {
     "Success": "Your payment of ${0} was received successfully. Transaction ID: {1}.",
     "Failed": "Payment failed. Error code: {0}.",
-    "Refund": "Your refund of ${0} will be processed within {1} business days."
+    "Refund": "Your refund of ${0} will be processed within {1} business days.",
+    "Pending": "Your payment is being processed. Awaiting confirmation.",
+    "Cancelled": "Payment transaction has been cancelled.",
+    "InsufficientFunds": "Insufficient funds.",
+    "CardDeclined": "Your card was declined. Please contact your bank.",
+    "InvalidCard": "Invalid card information. Please check and try again.",
+    "Expired": "Your card has expired."
+  },
+  "Product": {
+    "Created": "'{0}' has been added successfully.",
+    "Updated": "'{0}' has been updated.",
+    "Deleted": "'{0}' has been deleted.",
+    "NotFound": "Product not found.",
+    "OutOfStock": "'{0}' is out of stock.",
+    "LowStock": "Only {1} unit(s) of '{0}' remaining.",
+    "PriceUpdated": "'{0}' price updated to ${1}.",
+    "Published": "'{0}' has been published.",
+    "Unpublished": "'{0}' has been unpublished."
+  },
+  "Category": {
+    "Created": "Category '{0}' has been created.",
+    "Updated": "Category '{0}' has been updated.",
+    "Deleted": "Category '{0}' has been deleted.",
+    "NotFound": "Category not found.",
+    "HasProducts": "This category cannot be deleted because it contains products."
+  },
+  "Address": {
+    "Added": "Address added successfully.",
+    "Updated": "Address updated.",
+    "Deleted": "Address deleted.",
+    "SetDefault": "Set as default address.",
+    "NotFound": "Address not found.",
+    "MaxReached": "You can add a maximum of {0} addresses."
+  },
+  "File": {
+    "Uploaded": "'{0}' uploaded successfully.",
+    "UploadFailed": "An error occurred while uploading '{0}'.",
+    "Deleted": "File deleted.",
+    "NotFound": "File not found.",
+    "TooBig": "File size is too large. Maximum {0} MB allowed.",
+    "InvalidType": "Invalid file type. Allowed types: {0}.",
+    "Downloading": "Downloading '{0}'..."
   },
   "Notifications": {
     "EmailSent": "An email has been sent to {0}.",
-    "SmsSent": "An SMS has been sent to {0}."
+    "SmsSent": "An SMS has been sent to {0}.",
+    "PushSent": "Notification sent.",
+    "NewMessage": "New message from {0}.",
+    "NewOrder": "New order: #{0}.",
+    "LowStockAlert": "Stock is running low for '{0}'. Remaining: {1}.",
+    "SystemMaintenance": "System maintenance is scheduled: {0}.",
+    "AccountActivity": "A new sign-in was detected on your account on {0}."
+  },
+  "Search": {
+    "Results": "{1} result(s) found for '{0}'.",
+    "NoResults": "No results found for '{0}'.",
+    "Searching": "Searching for '{0}'...",
+    "RecentSearches": "Recent searches",
+    "ClearHistory": "Clear search history"
+  },
+  "Pagination": {
+    "Showing": "Showing {0} - {1} of {2}",
+    "Page": "Page {0} of {1}",
+    "ItemsPerPage": "{0} records per page",
+    "First": "First",
+    "Last": "Last",
+    "Previous": "Previous",
+    "Next": "Next"
+  },
+  "Table": {
+    "NoData": "No records found.",
+    "Loading": "Loading data...",
+    "Selected": "{0} record(s) selected.",
+    "DeleteSelected": "Delete {0} selected record(s)",
+    "ExportCsv": "Export as CSV",
+    "ExportExcel": "Export as Excel",
+    "SortAscending": "Sort ascending",
+    "SortDescending": "Sort descending"
+  },
+  "Form": {
+    "SavedDraft": "Draft saved.",
+    "UnsavedChanges": "You have unsaved changes. Are you sure you want to leave?",
+    "SubmitSuccess": "Form submitted successfully.",
+    "SubmitFailed": "An error occurred while submitting the form. Please try again.",
+    "AutoSaved": "Auto-saved at {0}."
+  },
+  "Dialog": {
+    "ConfirmDelete": "Are you sure you want to delete '{0}'? This action cannot be undone.",
+    "ConfirmAction": "Are you sure you want to perform this action?",
+    "ConfirmLeave": "Are you sure you want to leave this page? Unsaved changes will be lost.",
+    "DeleteSuccess": "'{0}' has been deleted successfully.",
+    "ActionSuccess": "Action completed successfully."
+  },
+  "Time": {
+    "JustNow": "Just now",
+    "MinutesAgo": "{0} minute(s) ago",
+    "HoursAgo": "{0} hour(s) ago",
+    "DaysAgo": "{0} day(s) ago",
+    "WeeksAgo": "{0} week(s) ago",
+    "MonthsAgo": "{0} month(s) ago",
+    "Today": "Today",
+    "Yesterday": "Yesterday",
+    "Tomorrow": "Tomorrow",
+    "ThisWeek": "This week",
+    "LastWeek": "Last week",
+    "ThisMonth": "This month",
+    "LastMonth": "Last month"
+  },
+  "Support": {
+    "TicketCreated": "Support ticket #{0} has been created.",
+    "TicketUpdated": "Your support ticket has been updated.",
+    "TicketResolved": "Your support ticket has been resolved.",
+    "TicketClosed": "Your support ticket has been closed.",
+    "TicketReplied": "A reply has been added to your support ticket.",
+    "NotFound": "Support ticket not found."
+  },
+  "Subscription": {
+    "Activated": "Your '{0}' subscription has been activated.",
+    "Cancelled": "Your subscription has been cancelled. You will have access until {0}.",
+    "Renewed": "Your subscription has been renewed until {0}.",
+    "Expired": "Your subscription has expired.",
+    "Upgraded": "Your subscription has been upgraded to the '{0}' plan.",
+    "Downgraded": "Your subscription has been downgraded to the '{0}' plan.",
+    "TrialStarted": "Your {1}-day free trial for '{0}' has started.",
+    "TrialEnding": "Your trial period ends in {0} days."
+  },
+  "Review": {
+    "Added": "Your review has been added.",
+    "Updated": "Your review has been updated.",
+    "Deleted": "Your review has been deleted.",
+    "NotAllowed": "You must purchase this product before leaving a review.",
+    "AlreadyReviewed": "You have already reviewed this product."
+  },
+  "Report": {
+    "Generated": "Report '{0}' has been generated.",
+    "Exported": "Report exported.",
+    "NoData": "No data available for the selected date range.",
+    "Scheduled": "Report will be sent on {0}."
+  },
+  "Settings": {
+    "Saved": "Settings saved.",
+    "Reset": "Settings reset to defaults.",
+    "LanguageChanged": "Language changed to '{0}'.",
+    "ThemeChanged": "Theme changed to '{0}'.",
+    "NotificationsEnabled": "Notifications enabled.",
+    "NotificationsDisabled": "Notifications disabled."
+  },
+  "Role": {
+    "Created": "Role '{0}' has been created.",
+    "Updated": "Role '{0}' has been updated.",
+    "Deleted": "Role '{0}' has been deleted.",
+    "Assigned": "Role '{1}' has been assigned to user {0}.",
+    "Removed": "Role '{1}' has been removed from user {0}.",
+    "NotFound": "Role not found.",
+    "HasUsers": "This role cannot be deleted because users are assigned to it."
+  },
+  "Dashboard": {
+    "TotalUsers": "Total Users",
+    "TotalOrders": "Total Orders",
+    "TotalRevenue": "Total Revenue",
+    "ActiveUsers": "Active Users",
+    "NewToday": "{0} new registrations today",
+    "ComparedToLastMonth": "{0}% {1} compared to last month"
   }
 }

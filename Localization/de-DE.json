@@ -2,43 +2,306 @@
   "Auth": {
     "Login": "Anmelden",
     "Logout": "Abmelden",
+    "Register": "Registrieren",
     "Welcome": "Willkommen, {0}!",
     "InvalidCredentials": "Ungültiger Benutzername oder Passwort.",
-    "Unauthorized": "Sie müssen angemeldet sein, um diese Aktion durchzuführen."
+    "Unauthorized": "Sie müssen angemeldet sein, um diese Aktion durchzuführen.",
+    "SessionExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.",
+    "AccountLocked": "Ihr Konto wurde gesperrt. Bitte kontaktieren Sie Ihren Administrator.",
+    "EmailNotVerified": "Ihre E-Mail-Adresse wurde nicht verifiziert. Bitte prüfen Sie Ihren Posteingang.",
+    "PasswordResetSent": "Ein Link zum Zurücksetzen des Passworts wurde an {0} gesendet.",
+    "PasswordResetSuccess": "Ihr Passwort wurde erfolgreich zurückgesetzt.",
+    "PasswordChanged": "Ihr Passwort wurde erfolgreich geändert.",
+    "TwoFactorRequired": "Bitte geben Sie Ihren Zwei-Faktor-Authentifizierungscode ein.",
+    "TwoFactorInvalid": "Der Verifizierungscode ist ungültig oder abgelaufen."
+  },
+  "User": {
+    "Created": "Ihr Konto wurde erfolgreich erstellt.",
+    "Updated": "Ihr Profil wurde aktualisiert.",
+    "Deleted": "Ihr Konto wurde gelöscht.",
+    "NotFound": "Benutzer nicht gefunden.",
+    "AlreadyExists": "Ein Konto mit der E-Mail-Adresse {0} existiert bereits.",
+    "RoleChanged": "Die Rolle von Benutzer {0} wurde auf '{1}' geändert.",
+    "Banned": "Benutzer {0} wurde gesperrt.",
+    "Unbanned": "Die Sperre von Benutzer {0} wurde aufgehoben.",
+    "PasswordMismatch": "Die Passwörter stimmen nicht überein.",
+    "ProfilePictureUpdated": "Ihr Profilbild wurde aktualisiert."
   },
   "Errors": {
     "NotFound": "Die gesuchte Ressource ({0}) wurde nicht gefunden.",
     "Unauthorized": "Sie haben keine Berechtigung, diese Aktion durchzuführen.",
+    "Forbidden": "Sie haben keinen Zugriff auf diese Seite.",
     "ServerError": "Serverfehler: {0}. Bitte versuchen Sie es später erneut.",
     "Notice": "Ihr erhaltener Fehler: {0}. Bitte beachten Sie.",
-    "ValidationFailed": "Validierung fehlgeschlagen. Bitte überprüfen Sie das Formular."
+    "ValidationFailed": "Validierung fehlgeschlagen. Bitte überprüfen Sie das Formular.",
+    "BadRequest": "Ungültige Anfrage. Bitte überprüfen Sie Ihre Eingaben.",
+    "Conflict": "Dieser Datensatz existiert bereits: {0}.",
+    "Timeout": "Die Anfrage ist abgelaufen. Bitte versuchen Sie es erneut.",
+    "ServiceUnavailable": "Der Dienst ist derzeit nicht verfügbar. Bitte versuchen Sie es später erneut.",
+    "TooManyRequests": "Zu viele Anfragen. Bitte warten Sie {0} Sekunden.",
+    "PayloadTooLarge": "Die Datenmenge ist zu groß. Maximale Größe: {0}.",
+    "Unhandled": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut."
   },
   "Validation": {
     "Required": "Das Feld '{0}' ist erforderlich.",
     "MinLength": "Das Feld '{0}' muss mindestens {1} Zeichen lang sein.",
     "MaxLength": "Das Feld '{0}' darf höchstens {1} Zeichen lang sein.",
+    "MinValue": "Das Feld '{0}' muss mindestens {1} betragen.",
+    "MaxValue": "Das Feld '{0}' darf höchstens {1} betragen.",
     "InvalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
-    "InvalidPhone": "Die Telefonnummer muss im Format {0} angegeben werden."
+    "InvalidPhone": "Die Telefonnummer muss im Format {0} angegeben werden.",
+    "InvalidUrl": "Bitte geben Sie eine gültige URL ein.",
+    "InvalidDate": "Bitte geben Sie ein gültiges Datum ein.",
+    "InvalidFormat": "Das Feld '{0}' hat kein gültiges Format.",
+    "MustBeNumeric": "Das Feld '{0}' darf nur Zahlen enthalten.",
+    "MustBeAlpha": "Das Feld '{0}' darf nur Buchstaben enthalten.",
+    "PasswordStrength": "Das Passwort muss mindestens einen Großbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten.",
+    "DateMustBeFuture": "Das Datum '{0}' muss in der Zukunft liegen.",
+    "DateMustBePast": "Das Datum '{0}' muss in der Vergangenheit liegen.",
+    "FileTooLarge": "Die Datei ist zu groß. Maximal {0} MB erlaubt.",
+    "InvalidFileType": "Ungültiger Dateityp. Erlaubte Typen: {0}.",
+    "UniqueConstraint": "Der Wert '{0}' wird bereits verwendet.",
+    "MustAgree": "Sie müssen den '{0}' Bedingungen zustimmen, um fortzufahren."
+  },
+  "UI": {
+    "Save": "Speichern",
+    "Cancel": "Abbrechen",
+    "Delete": "Löschen",
+    "Edit": "Bearbeiten",
+    "Add": "Hinzufügen",
+    "Update": "Aktualisieren",
+    "Confirm": "Bestätigen",
+    "Close": "Schließen",
+    "Back": "Zurück",
+    "Next": "Weiter",
+    "Submit": "Absenden",
+    "Reset": "Zurücksetzen",
+    "Search": "Suchen...",
+    "Filter": "Filtern",
+    "Clear": "Leeren",
+    "Loading": "Wird geladen...",
+    "Processing": "Wird verarbeitet...",
+    "NoResults": "Keine Ergebnisse gefunden.",
+    "NoData": "Noch keine Daten vorhanden.",
+    "SelectOption": "Auswählen...",
+    "All": "Alle",
+    "Yes": "Ja",
+    "No": "Nein",
+    "Ok": "OK",
+    "Retry": "Erneut versuchen",
+    "Refresh": "Aktualisieren",
+    "Download": "Herunterladen",
+    "Upload": "Hochladen",
+    "Preview": "Vorschau",
+    "Print": "Drucken",
+    "Share": "Teilen",
+    "Copy": "Kopieren",
+    "Copied": "Kopiert!",
+    "ExpandAll": "Alle erweitern",
+    "CollapseAll": "Alle reduzieren"
+  },
+  "Status": {
+    "Active": "Aktiv",
+    "Inactive": "Inaktiv",
+    "Pending": "Ausstehend",
+    "Approved": "Genehmigt",
+    "Rejected": "Abgelehnt",
+    "Cancelled": "Storniert",
+    "Completed": "Abgeschlossen",
+    "InProgress": "In Bearbeitung",
+    "Draft": "Entwurf",
+    "Published": "Veröffentlicht",
+    "Archived": "Archiviert",
+    "Expired": "Abgelaufen",
+    "Suspended": "Ausgesetzt",
+    "Failed": "Fehlgeschlagen",
+    "Refunded": "Erstattet"
   },
   "Orders": {
     "Created": "Bestellung #{0} wurde erstellt.",
     "Updated": "Der Status von Bestellung #{0} wurde auf '{1}' aktualisiert.",
     "Cancelled": "Bestellung #{0} wurde storniert. Rückerstattungsbetrag: {1} €.",
-    "NotFound": "Bestellung #{0} wurde nicht gefunden."
+    "NotFound": "Bestellung #{0} wurde nicht gefunden.",
+    "Shipped": "Bestellung #{0} wurde versandt. Sendungsnummer: {1}.",
+    "Delivered": "Bestellung #{0} wurde zugestellt.",
+    "Returned": "Eine Rückgabeanfrage für Bestellung #{0} wurde erstellt.",
+    "Summary": "Insgesamt {0} Bestellungen, Gesamtbetrag: {1} €."
   },
   "Cart": {
     "ItemAdded": "'{0}' wurde Ihrem Warenkorb hinzugefügt.",
     "ItemRemoved": "'{0}' wurde aus Ihrem Warenkorb entfernt.",
+    "ItemUpdated": "Menge von '{0}' wurde auf {1} aktualisiert.",
     "Summary": "Sie haben {0} Artikel in Ihrem Warenkorb. Gesamtbetrag: {1} €.",
-    "Empty": "Ihr Warenkorb ist leer."
+    "Empty": "Ihr Warenkorb ist leer.",
+    "Cleared": "Ihr Warenkorb wurde geleert.",
+    "MaxQuantity": "Sie können maximal {1} Einheiten von '{0}' hinzufügen.",
+    "OutOfStock": "'{0}' ist nicht in ausreichender Menge auf Lager."
   },
   "Payment": {
     "Success": "Ihre Zahlung von {0} € wurde erfolgreich empfangen. Transaktions-ID: {1}.",
     "Failed": "Zahlung fehlgeschlagen. Fehlercode: {0}.",
-    "Refund": "Ihre Rückerstattung von {0} € wird innerhalb von {1} Werktagen bearbeitet."
+    "Refund": "Ihre Rückerstattung von {0} € wird innerhalb von {1} Werktagen bearbeitet.",
+    "Pending": "Ihre Zahlung wird verarbeitet. Warten auf Bestätigung.",
+    "Cancelled": "Die Zahlungstransaktion wurde abgebrochen.",
+    "InsufficientFunds": "Unzureichendes Guthaben.",
+    "CardDeclined": "Ihre Karte wurde abgelehnt. Bitte kontaktieren Sie Ihre Bank.",
+    "InvalidCard": "Ungültige Kartendaten. Bitte überprüfen und erneut versuchen.",
+    "Expired": "Ihre Karte ist abgelaufen."
+  },
+  "Product": {
+    "Created": "'{0}' wurde erfolgreich hinzugefügt.",
+    "Updated": "'{0}' wurde aktualisiert.",
+    "Deleted": "'{0}' wurde gelöscht.",
+    "NotFound": "Produkt nicht gefunden.",
+    "OutOfStock": "'{0}' ist nicht auf Lager.",
+    "LowStock": "Nur noch {1} Einheit(en) von '{0}' verfügbar.",
+    "PriceUpdated": "Der Preis von '{0}' wurde auf {1} € aktualisiert.",
+    "Published": "'{0}' wurde veröffentlicht.",
+    "Unpublished": "'{0}' wurde aus der Veröffentlichung genommen."
+  },
+  "Category": {
+    "Created": "Kategorie '{0}' wurde erstellt.",
+    "Updated": "Kategorie '{0}' wurde aktualisiert.",
+    "Deleted": "Kategorie '{0}' wurde gelöscht.",
+    "NotFound": "Kategorie nicht gefunden.",
+    "HasProducts": "Diese Kategorie kann nicht gelöscht werden, da sie Produkte enthält."
+  },
+  "Address": {
+    "Added": "Adresse erfolgreich hinzugefügt.",
+    "Updated": "Adresse aktualisiert.",
+    "Deleted": "Adresse gelöscht.",
+    "SetDefault": "Als Standardadresse festgelegt.",
+    "NotFound": "Adresse nicht gefunden.",
+    "MaxReached": "Sie können maximal {0} Adressen hinzufügen."
+  },
+  "File": {
+    "Uploaded": "'{0}' wurde erfolgreich hochgeladen.",
+    "UploadFailed": "Beim Hochladen von '{0}' ist ein Fehler aufgetreten.",
+    "Deleted": "Datei gelöscht.",
+    "NotFound": "Datei nicht gefunden.",
+    "TooBig": "Datei zu groß. Maximal {0} MB erlaubt.",
+    "InvalidType": "Ungültiger Dateityp. Erlaubte Typen: {0}.",
+    "Downloading": "'{0}' wird heruntergeladen..."
   },
   "Notifications": {
     "EmailSent": "Eine E-Mail wurde an {0} gesendet.",
-    "SmsSent": "Eine SMS wurde an {0} gesendet."
+    "SmsSent": "Eine SMS wurde an {0} gesendet.",
+    "PushSent": "Benachrichtigung gesendet.",
+    "NewMessage": "Neue Nachricht von {0}.",
+    "NewOrder": "Neue Bestellung: #{0}.",
+    "LowStockAlert": "Lagerbestand für '{0}' ist niedrig. Verbleibend: {1}.",
+    "SystemMaintenance": "Systemwartung geplant: {0}.",
+    "AccountActivity": "Am {0} wurde eine neue Anmeldung in Ihrem Konto festgestellt."
+  },
+  "Search": {
+    "Results": "{1} Ergebnis(se) für '{0}' gefunden.",
+    "NoResults": "Keine Ergebnisse für '{0}' gefunden.",
+    "Searching": "Suche nach '{0}'...",
+    "RecentSearches": "Letzte Suchanfragen",
+    "ClearHistory": "Suchverlauf löschen"
+  },
+  "Pagination": {
+    "Showing": "{0} - {1} von {2} werden angezeigt",
+    "Page": "Seite {0} von {1}",
+    "ItemsPerPage": "{0} Einträge pro Seite",
+    "First": "Erste",
+    "Last": "Letzte",
+    "Previous": "Vorherige",
+    "Next": "Nächste"
+  },
+  "Table": {
+    "NoData": "Keine Datensätze gefunden.",
+    "Loading": "Daten werden geladen...",
+    "Selected": "{0} Datensatz/-sätze ausgewählt.",
+    "DeleteSelected": "{0} ausgewählte(n) Datensatz/-sätze löschen",
+    "ExportCsv": "Als CSV exportieren",
+    "ExportExcel": "Als Excel exportieren",
+    "SortAscending": "Aufsteigend sortieren",
+    "SortDescending": "Absteigend sortieren"
+  },
+  "Form": {
+    "SavedDraft": "Entwurf gespeichert.",
+    "UnsavedChanges": "Sie haben ungespeicherte Änderungen. Möchten Sie die Seite wirklich verlassen?",
+    "SubmitSuccess": "Formular erfolgreich abgesendet.",
+    "SubmitFailed": "Beim Absenden des Formulars ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+    "AutoSaved": "Automatisch gespeichert um {0}."
+  },
+  "Dialog": {
+    "ConfirmDelete": "Möchten Sie '{0}' wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "ConfirmAction": "Möchten Sie diese Aktion wirklich durchführen?",
+    "ConfirmLeave": "Möchten Sie diese Seite wirklich verlassen? Ungespeicherte Änderungen gehen verloren.",
+    "DeleteSuccess": "'{0}' wurde erfolgreich gelöscht.",
+    "ActionSuccess": "Aktion erfolgreich abgeschlossen."
+  },
+  "Time": {
+    "JustNow": "Gerade eben",
+    "MinutesAgo": "Vor {0} Minute(n)",
+    "HoursAgo": "Vor {0} Stunde(n)",
+    "DaysAgo": "Vor {0} Tag(en)",
+    "WeeksAgo": "Vor {0} Woche(n)",
+    "MonthsAgo": "Vor {0} Monat(en)",
+    "Today": "Heute",
+    "Yesterday": "Gestern",
+    "Tomorrow": "Morgen",
+    "ThisWeek": "Diese Woche",
+    "LastWeek": "Letzte Woche",
+    "ThisMonth": "Diesen Monat",
+    "LastMonth": "Letzten Monat"
+  },
+  "Support": {
+    "TicketCreated": "Support-Ticket #{0} wurde erstellt.",
+    "TicketUpdated": "Ihr Support-Ticket wurde aktualisiert.",
+    "TicketResolved": "Ihr Support-Ticket wurde gelöst.",
+    "TicketClosed": "Ihr Support-Ticket wurde geschlossen.",
+    "TicketReplied": "Auf Ihr Support-Ticket wurde geantwortet.",
+    "NotFound": "Support-Ticket nicht gefunden."
+  },
+  "Subscription": {
+    "Activated": "Ihr '{0}'-Abonnement wurde aktiviert.",
+    "Cancelled": "Ihr Abonnement wurde gekündigt. Sie haben bis zum {0} Zugang.",
+    "Renewed": "Ihr Abonnement wurde bis zum {0} verlängert.",
+    "Expired": "Ihr Abonnement ist abgelaufen.",
+    "Upgraded": "Ihr Abonnement wurde auf den '{0}'-Plan aufgewertet.",
+    "Downgraded": "Ihr Abonnement wurde auf den '{0}'-Plan herabgestuft.",
+    "TrialStarted": "Ihre {1}-tägige kostenlose Testphase für '{0}' hat begonnen.",
+    "TrialEnding": "Ihre Testphase endet in {0} Tagen."
+  },
+  "Review": {
+    "Added": "Ihre Bewertung wurde hinzugefügt.",
+    "Updated": "Ihre Bewertung wurde aktualisiert.",
+    "Deleted": "Ihre Bewertung wurde gelöscht.",
+    "NotAllowed": "Sie müssen dieses Produkt kaufen, bevor Sie eine Bewertung hinterlassen können.",
+    "AlreadyReviewed": "Sie haben dieses Produkt bereits bewertet."
+  },
+  "Report": {
+    "Generated": "Bericht '{0}' wurde erstellt.",
+    "Exported": "Bericht exportiert.",
+    "NoData": "Für den ausgewählten Zeitraum sind keine Daten verfügbar.",
+    "Scheduled": "Bericht wird am {0} gesendet."
+  },
+  "Settings": {
+    "Saved": "Einstellungen gespeichert.",
+    "Reset": "Einstellungen auf Standardwerte zurückgesetzt.",
+    "LanguageChanged": "Sprache auf '{0}' geändert.",
+    "ThemeChanged": "Design auf '{0}' geändert.",
+    "NotificationsEnabled": "Benachrichtigungen aktiviert.",
+    "NotificationsDisabled": "Benachrichtigungen deaktiviert."
+  },
+  "Role": {
+    "Created": "Rolle '{0}' wurde erstellt.",
+    "Updated": "Rolle '{0}' wurde aktualisiert.",
+    "Deleted": "Rolle '{0}' wurde gelöscht.",
+    "Assigned": "Rolle '{1}' wurde Benutzer {0} zugewiesen.",
+    "Removed": "Rolle '{1}' wurde von Benutzer {0} entfernt.",
+    "NotFound": "Rolle nicht gefunden.",
+    "HasUsers": "Diese Rolle kann nicht gelöscht werden, da ihr Benutzer zugewiesen sind."
+  },
+  "Dashboard": {
+    "TotalUsers": "Gesamtbenutzer",
+    "TotalOrders": "Gesamtbestellungen",
+    "TotalRevenue": "Gesamtumsatz",
+    "ActiveUsers": "Aktive Benutzer",
+    "NewToday": "{0} neue Registrierungen heute",
+    "ComparedToLastMonth": "{0}% {1} im Vergleich zum letzten Monat"
   }
 }
