@@ -1,0 +1,14 @@
+# Build çıktıları — image'a gitmesin
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+
+# Git
+.git/
+.gitignore
+
+# Geçici
+demo.html
