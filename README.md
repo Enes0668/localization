@@ -37,7 +37,7 @@ Uygulama varsayılan olarak `http://localhost:5000` (veya belirtilen port) üzer
 
 ## Örnek İstekler ve Yanıtlar
 
-### 1. Parametrik Hata Mesajı Testi (Furkan Bey''in İstediği Örnek)
+### 1. Parametrik Hata Mesajı Testi
 - **Şablon:** `"Aldığınız Hata: {0}. Dikkat ediniz."`
 - **Endpoint:** `GET /api/error-test?code=404`
 
