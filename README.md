@@ -1,6 +1,6 @@
 ﻿# ASP.NET Core 8 JSON-Based Parametric Localization API
 
-Bu proje, Furkan ÇALIŞKAN''ın talebi doğrultusunda hazırlanmış; **MVC kullanmadan (Minimal API)**, bağımsız bir dizindeki (`Localization/`) JSON dosyalarından dil verilerini okuyan, `Accept-Language` başlığı veya sorgu parametresine göre istemciye doğru dilde ve **parametrik yer tutucularla (`{0}`, `{1}`)** yanıt dönen bir referans projedir.
+Bu proje, **MVC kullanmadan (Minimal API)**, bağımsız bir dizindeki (`Localization/`) JSON dosyalarından dil verilerini okuyan, `Accept-Language` başlığı veya sorgu parametresine göre istemciye doğru dilde ve **parametrik yer tutucularla (`{0}`, `{1}`)** yanıt dönen bir referans projedir.
 
 ---
 
