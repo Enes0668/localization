@@ -69,8 +69,7 @@ var users = new Dictionary<string, (string Password, string Role)>
 var supportedCultures = new[]
 {
     new CultureInfo("tr-TR"),
-    new CultureInfo("en-US"),
-    new CultureInfo("de-DE")
+    new CultureInfo("en-US")
 };
 
 app.UseRequestLocalization(new RequestLocalizationOptions
@@ -262,29 +261,42 @@ app.MapPost("/api/keys", async (HttpContext ctx, ClaimsPrincipal user, IJsonStri
     if (req.Translations is null || req.Translations.Count == 0)
         return Results.BadRequest(new { Error = "'translations' alanı zorunludur." });
 
+    var filePath = Path.Combine("Localization", "localization.json");
+    if (!File.Exists(filePath))
+        return Results.Problem("Localization dosyası bulunamadı.");
+
+    var json = await File.ReadAllTextAsync(filePath);
+    var rootNode = System.Text.Json.Nodes.JsonNode.Parse(json)?.AsObject()
+                   ?? new System.Text.Json.Nodes.JsonObject();
+
     var results = new List<object>();
     foreach (var (culture, value) in req.Translations)
     {
-        var filePath = Path.Combine("Localization", $"{culture}.json");
-        if (!File.Exists(filePath))
+        var lang = JsonStringLocalizer.NormalizeCulture(culture);
+        if (!rootNode.ContainsKey(lang))
         {
-            results.Add(new { Culture = culture, Success = false, Error = "Dil dosyası bulunamadı." });
-            continue;
+            rootNode[lang] = new System.Text.Json.Nodes.JsonObject();
         }
 
-        var json = await File.ReadAllTextAsync(filePath);
-        var dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json)
-                   ?? new Dictionary<string, string>();
-
-        dict[req.Key] = value;
-
-        var updated = System.Text.Json.JsonSerializer.Serialize(dict,
-            new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-        await File.WriteAllTextAsync(filePath, updated);
-
-        JsonStringLocalizer.ClearCache(culture);
-        results.Add(new { Culture = culture, Success = true });
+        var langObj = rootNode[lang]?.AsObject();
+        if (langObj is not null)
+        {
+            langObj[req.Key] = value;
+            JsonStringLocalizer.ClearCache(lang);
+            results.Add(new { Culture = culture, Language = lang, Success = true });
+        }
+        else
+        {
+            results.Add(new { Culture = culture, Language = lang, Success = false, Error = "Dil bloğu geçersiz." });
+        }
     }
+
+    var updatedJson = rootNode.ToJsonString(new System.Text.Json.JsonSerializerOptions
+    {
+        WriteIndented = true,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    });
+    await File.WriteAllTextAsync(filePath, updatedJson);
 
     return Results.Ok(new { Key = req.Key, Results = results, AddedBy = user.Identity?.Name });
 }).RequireAuthorization();

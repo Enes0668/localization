@@ -68,32 +68,78 @@ public class JsonStringLocalizer : IJsonStringLocalizer
         return GetDictionaryForCulture(culture).Keys;
     }
 
+    /// <summary>
+    /// Belirli bir kültür için tüm key'leri döner.
+    /// </summary>
+    public IEnumerable<string> GetAllKeysForCulture(string culture)
+        => GetDictionaryForCulture(culture).Keys;
+
+    /// <summary>
+    /// Belirli bir kültür için key çevirisini döner.
+    /// Key bulunamazsa key'in kendisini döner.
+    /// </summary>
+    public string GetWithCulture(string key, string culture)
+    {
+        var strings = GetDictionaryForCulture(culture);
+        return strings.TryGetValue(key, out var value) ? value : key;
+    }
+
+    /// <summary>
+    /// Belirli bir kültür için key çevirisini parametrelerle formatlayarak döner.
+    /// Key bulunamazsa key'in kendisini döner.
+    /// </summary>
+    public string GetWithCulture(string key, string culture, params object[] arguments)
+    {
+        var template = GetWithCulture(key, culture);
+
+        if (arguments == null || arguments.Length == 0)
+        {
+            return template;
+        }
+
+        try
+        {
+            CultureInfo cultureInfo;
+            try
+            {
+                cultureInfo = CultureInfo.GetCultureInfo(culture);
+            }
+            catch (CultureNotFoundException)
+            {
+                cultureInfo = CultureInfo.CurrentCulture;
+            }
+
+            return string.Format(cultureInfo, template, arguments);
+        }
+        catch (FormatException)
+        {
+            return template;
+        }
+    }
+
+    public static string NormalizeCulture(string? cultureName)
+    {
+        if (string.IsNullOrWhiteSpace(cultureName))
+            return "tr";
+
+        var code = cultureName.Split('-')[0].ToLowerInvariant();
+        return code switch
+        {
+            "en" => "en",
+            _    => "tr"
+        };
+    }
+
     private Dictionary<string, string> GetDictionaryForCulture(string cultureName)
     {
-        if (Cache.TryGetValue(cultureName, out var cachedDict))
+        var lang = NormalizeCulture(cultureName);
+
+        if (Cache.TryGetValue(lang, out var cachedDict))
         {
             return cachedDict;
         }
 
-        var filePath = Path.Combine(_localizationPath, $"{cultureName}.json");
-
-        // Tam eşleşme yoksa dil kodu prefix'iyle eşleşen dosyayı bul (örn. "de" → "de-DE.json")
-        if (!File.Exists(filePath))
-        {
-            var fallbackFiles = Directory.GetFiles(_localizationPath, "*.json");
-            var matchedFile = fallbackFiles.FirstOrDefault(f =>
-                Path.GetFileNameWithoutExtension(f).StartsWith(cultureName.Split('-')[0], StringComparison.OrdinalIgnoreCase));
-
-            if (matchedFile != null)
-            {
-                filePath = matchedFile;
-            }
-            else
-            {
-                // Hiçbiri bulunamazsa varsayılan dil dosyası (tr-TR.json)
-                filePath = Path.Combine(_localizationPath, "tr-TR.json");
-            }
-        }
+        var filePath = Path.Combine(_localizationPath, "localization.json");
 
         if (File.Exists(filePath))
         {
@@ -102,11 +148,13 @@ public class JsonStringLocalizer : IJsonStringLocalizer
                 var json = File.ReadAllText(filePath);
                 using var document = JsonDocument.Parse(json);
 
-                // İç içe (nested) JSON yapısını "Kategori.Anahtar" → "Değer" şeklinde düzleştir
-                var dict = FlattenJson(document.RootElement);
-
-                Cache[cultureName] = dict;
-                return dict;
+                if (document.RootElement.TryGetProperty(lang, out var langElement) &&
+                    langElement.ValueKind == JsonValueKind.Object)
+                {
+                    var dict = FlattenJson(langElement);
+                    Cache[lang] = dict;
+                    return dict;
+                }
             }
             catch
             {
@@ -114,8 +162,8 @@ public class JsonStringLocalizer : IJsonStringLocalizer
             }
         }
 
-        var emptyDict = new Dictionary<string, string>();
-        Cache[cultureName] = emptyDict;
+        var emptyDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        Cache[lang] = emptyDict;
         return emptyDict;
     }
 
@@ -157,7 +205,8 @@ public class JsonStringLocalizer : IJsonStringLocalizer
     {
         if (cultureName != null)
         {
-            Cache.TryRemove(cultureName, out _);
+            var lang = NormalizeCulture(cultureName);
+            Cache.TryRemove(lang, out _);
         }
         else
         {

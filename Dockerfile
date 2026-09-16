@@ -18,6 +18,8 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 # Port
+# Container'da 8080'den dinle
+ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
 # Başlat

@@ -8,8 +8,24 @@ public interface IJsonStringLocalizer
     string GetString(string key, params object[] arguments);
 
     /// <summary>
-    /// Aktif kültür için mevcut tüm key'leri döner.
-    /// Örnek: "Auth.Login", "Errors.NotFound", "Cart.Summary"
+    /// Aktif kültür için tüm key'leri döner.
     /// </summary>
     IEnumerable<string> GetAllKeys();
+
+    /// <summary>
+    /// Belirli bir kültür için tüm key'leri döner.
+    /// </summary>
+    IEnumerable<string> GetAllKeysForCulture(string culture);
+
+    /// <summary>
+    /// Belirli bir kültür için key çevirisini döner.
+    /// Key bulunamazsa key'in kendisini döner.
+    /// </summary>
+    string GetWithCulture(string key, string culture);
+
+    /// <summary>
+    /// Belirli bir kültür için key çevirisini parametrelerle formatlayarak döner.
+    /// Key bulunamazsa key'in kendisini döner.
+    /// </summary>
+    string GetWithCulture(string key, string culture, params object[] arguments);
 }

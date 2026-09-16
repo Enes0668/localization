@@ -1,4 +1,4 @@
-﻿# ASP.NET Core 8 JSON-Based Parametric Localization API
+# ASP.NET Core 8 JSON-Based Parametric Localization API
 
 Bu proje, **MVC kullanmadan (Minimal API)**, bağımsız bir dizindeki (`Localization/`) JSON dosyalarından dil verilerini okuyan, `Accept-Language` başlığı veya sorgu parametresine göre istemciye doğru dilde ve **parametrik yer tutucularla (`{0}`, `{1}`)** yanıt dönen bir referans projedir.
 
@@ -10,9 +10,7 @@ Bu proje, **MVC kullanmadan (Minimal API)**, bağımsız bir dizindeki (`Localiz
 LocalizationApi/
 │
 ├── Localization/                 # Bağımsız localization dosyaları
-│   ├── tr-TR.json                # Türkçe dil sözlüğü
-│   ├── en-US.json                # İngilizce dil sözlüğü
-│   └── de-DE.json                # Almanca dil sözlüğü
+│   └── localization.json         # Tüm diller (en, tr) tek JSON dosyasında
 │
 ├── Services/
 │   ├── IJsonStringLocalizer.cs   # Yerelleştirme servis sözleşmesi
@@ -64,19 +62,6 @@ curl -H "Accept-Language: en-US" http://localhost:5000/api/error-test?code=404
   "culture": "en-US",
   "errorCode": "404",
   "errorMessage": "The error you received: 404. Please pay attention."
-}
-```
-
-#### Almanca İstek:
-```bash
-curl -H "Accept-Language: de-DE" http://localhost:5000/api/error-test?code=404
-```
-**Yanıt (HTTP 400):**
-```json
-{
-  "culture": "de-DE",
-  "errorCode": "404",
-  "errorMessage": "Ihr erhaltener Fehler: 404. Bitte beachten Sie."
 }
 ```
 
