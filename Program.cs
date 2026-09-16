@@ -83,32 +83,25 @@ app.UseCors();
 app.UseAuthentication(); // JWT token'ı oku ve doğrula
 app.UseAuthorization();  // Yetkiyi kontrol et
 
-// wwwroot/ klasöründeki statik dosyaları sun (index.html UI)
-app.UseDefaultFiles();   // / → index.html yönlendirmesi
-app.UseStaticFiles();    // wwwroot/ klasörünü sun
-
 // ──────────────────────────────────────────────────────────────
 // 4. ENDPOINTler
 // ──────────────────────────────────────────────────────────────
 
-// API Bilgilendirme (herkese açık)
-app.MapGet("/api/info", () => Results.Ok(new
+// API Bilgilendirme (Kök dizin ve /api/info)
+app.MapGet("/", () => Results.Ok(new
 {
-    Message = "Localization API v3 — Obje Çevirici",
-    PublicEndpoints = new[]
+    Service = "Localization API — Response Transformer",
+    Status = "Running",
+    SupportedCultures = new[] { "tr-TR (tr)", "en-US (en)" },
+    Endpoints = new
     {
-        "POST /auth/login  →  { username, password } → token al"
-    },
-    ProtectedEndpoints = new[]
-    {
-        "POST /api/translate  →  Objeyi al, belirtilen alanları çevir, objeyi geri ver",
-        "GET  /api/localize/{key}?culture=tr-TR  →  Tek key çevir",
-        "GET  /api/keys?culture=tr-TR  →  Tüm key'leri listele",
-        "POST /api/keys  →  Yeni çeviri key'i ekle (Admin)",
-        "DELETE /api/cache  →  Cache temizle (Admin)"
-    },
-    HowToUse = "1) /auth/login ile token al  2) Her istekte 'Authorization: Bearer {token}' ekle"
+        Translate = "POST /api/translate  →  Objeyi al, çevir, geri ver",
+        LocalizeKey = "GET  /api/localize/{key}?culture=tr-TR  →  Tek anahtar çevir",
+        Keys = "GET  /api/keys?culture=tr-TR  →  Tüm anahtarları listele"
+    }
 }));
+
+app.MapGet("/api/info", () => Results.Redirect("/"));
 
 // ──────────────────────────────────────────────────────────────
 // AUTH ENDPOINTLERİ (herkese açık)
@@ -161,9 +154,6 @@ app.MapPost("/api/translate", async (HttpContext ctx, IJsonStringLocalizer local
     if (req is null || req.Data is null)
         return Results.BadRequest(new { Error = "'data' alanı zorunludur." });
 
-    if (req.Fields is null || req.Fields.Length == 0)
-        return Results.BadRequest(new { Error = "'fields' alanı zorunludur." });
-
     // Kültür: query string > body > varsayılan
     var cultureName = ctx.Request.Query["culture"].FirstOrDefault()
                       ?? req.Culture
@@ -177,35 +167,72 @@ app.MapPost("/api/translate", async (HttpContext ctx, IJsonStringLocalizer local
     var translated = new List<object>();
     var notFound   = new List<string>();
 
-    foreach (var fieldPath in req.Fields)
+    if (req.Fields is null || req.Fields.Length == 0)
     {
-        var parts   = fieldPath.Split('.');
-        var current = node;
-
-        // İç içe path'e git (son elemana kadar)
-        for (int i = 0; i < parts.Length - 1; i++)
+        // fields belirtilmemişse tüm JSON içindeki string değerleri otomatik çevir
+        void TranslateRecursive(System.Text.Json.Nodes.JsonNode? currentNode, string currentPath = "")
         {
-            current = current?[parts[i]];
-            if (current is null) break;
+            if (currentNode is System.Text.Json.Nodes.JsonObject obj)
+            {
+                foreach (var prop in obj.ToList())
+                {
+                    var childPath = string.IsNullOrEmpty(currentPath) ? prop.Key : $"{currentPath}.{prop.Key}";
+                    if (prop.Value is System.Text.Json.Nodes.JsonValue val && val.TryGetValue<string>(out var strVal))
+                    {
+                        var localized = localizer.GetWithCulture(strVal, cultureName);
+                        if (localized != strVal)
+                        {
+                            obj[prop.Key] = localized;
+                            translated.Add(new { Field = childPath, From = strVal, To = localized });
+                        }
+                    }
+                    else
+                    {
+                        TranslateRecursive(prop.Value, childPath);
+                    }
+                }
+            }
+            else if (currentNode is System.Text.Json.Nodes.JsonArray arr)
+            {
+                for (int i = 0; i < arr.Count; i++)
+                {
+                    TranslateRecursive(arr[i], $"{currentPath}[{i}]");
+                }
+            }
         }
 
-        if (current is null) { notFound.Add(fieldPath); continue; }
-
-        var lastKey     = parts[^1];
-        var rawValue    = current[lastKey]?.GetValue<string>();
-        if (rawValue is null) { notFound.Add(fieldPath); continue; }
-
-        // LocalizationAPI'den çeviriyi al
-        var localized = localizer.GetWithCulture(rawValue, cultureName);
-
-        if (localized != rawValue)
+        TranslateRecursive(node);
+    }
+    else
+    {
+        foreach (var fieldPath in req.Fields)
         {
-            current[lastKey] = localized;
-            translated.Add(new { Field = fieldPath, From = rawValue, To = localized });
-        }
-        else
-        {
-            notFound.Add(fieldPath + $" ('{rawValue}' key bulunamadı)");
+            var parts   = fieldPath.Split('.');
+            var current = node;
+
+            for (int i = 0; i < parts.Length - 1; i++)
+            {
+                current = current?[parts[i]];
+                if (current is null) break;
+            }
+
+            if (current is null) { notFound.Add(fieldPath); continue; }
+
+            var lastKey     = parts[^1];
+            var rawValue    = current[lastKey]?.GetValue<string>();
+            if (rawValue is null) { notFound.Add(fieldPath); continue; }
+
+            var localized = localizer.GetWithCulture(rawValue, cultureName);
+
+            if (localized != rawValue)
+            {
+                current[lastKey] = localized;
+                translated.Add(new { Field = fieldPath, From = rawValue, To = localized });
+            }
+            else
+            {
+                notFound.Add(fieldPath + $" ('{rawValue}' key bulunamadı)");
+            }
         }
     }
 
@@ -216,10 +243,10 @@ app.MapPost("/api/translate", async (HttpContext ctx, IJsonStringLocalizer local
         Translated = translated,
         NotFound   = notFound
     });
-}).RequireAuthorization();
+});
 
 // ──────────────────────────────────────────────────────────────
-// TEK KEY ÇEVİR (token zorunlu)
+// TEK KEY ÇEVİR (herkese açık)
 // GET /api/localize/{key}?culture=tr-TR
 // ──────────────────────────────────────────────────────────────
 app.MapGet("/api/localize/{key}", (string key, HttpContext ctx, IJsonStringLocalizer localizer) =>
@@ -234,16 +261,16 @@ app.MapGet("/api/localize/{key}", (string key, HttpContext ctx, IJsonStringLocal
         Value      = result,
         IsTranslated = result != key
     });
-}).RequireAuthorization();
+});
 
-// KEY LİSTESİ (token zorunlu)
+// KEY LİSTESİ (herkese açık)
 app.MapGet("/api/keys", (HttpContext ctx, IJsonStringLocalizer localizer) =>
 {
     var culture = ctx.Request.Query["culture"].FirstOrDefault()
                   ?? CultureInfo.CurrentUICulture.Name;
     var keys = localizer.GetAllKeysForCulture(culture).OrderBy(k => k).ToList();
     return Results.Ok(new { Culture = culture, Count = keys.Count, Keys = keys });
-}).RequireAuthorization();
+});
 
 // YENİ KEY EKLE (sadece Admin)
 app.MapPost("/api/keys", async (HttpContext ctx, ClaimsPrincipal user, IJsonStringLocalizer localizer) =>
@@ -324,7 +351,7 @@ record LoginRequest(string Username, string Password);
 
 record TranslateRequest(
     string?                          Culture,
-    string[]                         Fields,
+    string[]?                        Fields,
     System.Text.Json.JsonElement?    Data
 );
 
