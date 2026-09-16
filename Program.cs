@@ -95,112 +95,201 @@ app.UseStaticFiles();    // wwwroot/ klasörünü sun
 // API Bilgilendirme (herkese açık)
 app.MapGet("/api/info", () => Results.Ok(new
 {
-    Message = "Localization API v2 — JWT Korumalı",
+    Message = "Localization API v3 — Obje Çevirici",
     PublicEndpoints = new[]
     {
         "POST /auth/login  →  { username, password } → token al"
     },
     ProtectedEndpoints = new[]
     {
-        "GET /auth/me  →  kim olduğunu gör (token gerekli)",
-        "GET /api/localize/{key}?culture=tr-TR&p0=değer",
-        "GET /api/keys?culture=en-US",
-        "DELETE /api/cache"
+        "POST /api/translate  →  Objeyi al, belirtilen alanları çevir, objeyi geri ver",
+        "GET  /api/localize/{key}?culture=tr-TR  →  Tek key çevir",
+        "GET  /api/keys?culture=tr-TR  →  Tüm key'leri listele",
+        "POST /api/keys  →  Yeni çeviri key'i ekle (Admin)",
+        "DELETE /api/cache  →  Cache temizle (Admin)"
     },
-    HowToUse = "Önce /auth/login ile token al, sonra her istekte 'Authorization: Bearer {token}' header'ı ekle"
+    HowToUse = "1) /auth/login ile token al  2) Her istekte 'Authorization: Bearer {token}' ekle"
 }));
 
 // ──────────────────────────────────────────────────────────────
-// AUTH ENDPOINTLERİ (herkese açık — token olmadan erişilir)
+// AUTH ENDPOINTLERİ (herkese açık)
 // ──────────────────────────────────────────────────────────────
 
-// LOGIN → Token üretir
 app.MapPost("/auth/login", (LoginRequest req) =>
 {
-    // Kullanıcıyı kontrol et
     if (!users.TryGetValue(req.Username, out var user) || user.Password != req.Password)
-    {
         return Results.Unauthorized();
-    }
 
-    // JWT Token oluştur
     var claims = new[]
     {
-        new Claim(ClaimTypes.Name,          req.Username),
-        new Claim(ClaimTypes.Role,          user.Role),
-        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) // Token benzersizliği
+        new Claim(ClaimTypes.Name, req.Username),
+        new Claim(ClaimTypes.Role, user.Role),
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
     };
 
     var key   = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
     var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-    var token = new JwtSecurityToken(
-        issuer:             jwtIssuer,
-        audience:           jwtAudience,
-        claims:             claims,
-        expires:            DateTime.UtcNow.AddMinutes(jwtExpiry),
-        signingCredentials: creds
-    );
-
-    var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+    var token = new JwtSecurityToken(jwtIssuer, jwtAudience, claims,
+        expires: DateTime.UtcNow.AddMinutes(jwtExpiry), signingCredentials: creds);
 
     return Results.Ok(new
     {
-        Token     = tokenString,
+        Token     = new JwtSecurityTokenHandler().WriteToken(token),
         ExpiresIn = $"{jwtExpiry} dakika",
         Username  = req.Username,
         Role      = user.Role
     });
 });
 
-// KİM OLDUĞUMU GÖR (token gerekli — test amaçlı)
-app.MapGet("/auth/me", (ClaimsPrincipal user) =>
+app.MapGet("/auth/me", (ClaimsPrincipal user) => Results.Ok(new
 {
+    Username        = user.Identity?.Name,
+    Role            = user.FindFirst(ClaimTypes.Role)?.Value,
+    IsAuthenticated = user.Identity?.IsAuthenticated
+})).RequireAuthorization();
+
+// ──────────────────────────────────────────────────────────────
+// ANA ENDPOINT: OBJE ÇEVİRİCİ (token zorunlu)
+// POST /api/translate
+// Body: { culture, fields: ["message","processInfo.message"], data: { ... } }
+// ──────────────────────────────────────────────────────────────
+app.MapPost("/api/translate", async (HttpContext ctx, IJsonStringLocalizer localizer) =>
+{
+    TranslateRequest? req;
+    try { req = await ctx.Request.ReadFromJsonAsync<TranslateRequest>(); }
+    catch { return Results.BadRequest(new { Error = "Geçersiz JSON gövdesi." }); }
+
+    if (req is null || req.Data is null)
+        return Results.BadRequest(new { Error = "'data' alanı zorunludur." });
+
+    if (req.Fields is null || req.Fields.Length == 0)
+        return Results.BadRequest(new { Error = "'fields' alanı zorunludur." });
+
+    // Kültür: query string > body > varsayılan
+    var cultureName = ctx.Request.Query["culture"].FirstOrDefault()
+                      ?? req.Culture
+                      ?? CultureInfo.CurrentUICulture.Name;
+
+    // JsonNode üzerinde çalış (mutable)
+    var node = System.Text.Json.Nodes.JsonNode.Parse(req.Data.Value.GetRawText());
+    if (node is null)
+        return Results.BadRequest(new { Error = "Geçersiz 'data' değeri." });
+
+    var translated = new List<object>();
+    var notFound   = new List<string>();
+
+    foreach (var fieldPath in req.Fields)
+    {
+        var parts   = fieldPath.Split('.');
+        var current = node;
+
+        // İç içe path'e git (son elemana kadar)
+        for (int i = 0; i < parts.Length - 1; i++)
+        {
+            current = current?[parts[i]];
+            if (current is null) break;
+        }
+
+        if (current is null) { notFound.Add(fieldPath); continue; }
+
+        var lastKey     = parts[^1];
+        var rawValue    = current[lastKey]?.GetValue<string>();
+        if (rawValue is null) { notFound.Add(fieldPath); continue; }
+
+        // LocalizationAPI'den çeviriyi al
+        var localized = localizer.GetWithCulture(rawValue, cultureName);
+
+        if (localized != rawValue)
+        {
+            current[lastKey] = localized;
+            translated.Add(new { Field = fieldPath, From = rawValue, To = localized });
+        }
+        else
+        {
+            notFound.Add(fieldPath + $" ('{rawValue}' key bulunamadı)");
+        }
+    }
+
     return Results.Ok(new
     {
-        Username = user.Identity?.Name,
-        Role     = user.FindFirst(ClaimTypes.Role)?.Value,
-        IsAuthenticated = user.Identity?.IsAuthenticated
+        Culture    = cultureName,
+        Data       = node,
+        Translated = translated,
+        NotFound   = notFound
     });
 }).RequireAuthorization();
 
 // ──────────────────────────────────────────────────────────────
-// LOCALIZATION ENDPOINTLERİ (token zorunlu)
+// TEK KEY ÇEVİR (token zorunlu)
+// GET /api/localize/{key}?culture=tr-TR
 // ──────────────────────────────────────────────────────────────
-
-// GENERIC LOCALIZE
 app.MapGet("/api/localize/{key}", (string key, HttpContext ctx, IJsonStringLocalizer localizer) =>
 {
-    var args = ctx.Request.Query
-        .Where(q => q.Key.StartsWith("p", StringComparison.OrdinalIgnoreCase)
-                    && int.TryParse(q.Key[1..], out _))
-        .OrderBy(q => int.Parse(q.Key[1..]))
-        .Select(q => (object)q.Value.ToString())
-        .ToArray();
-
-    var message = args.Length > 0 ? localizer[key, args] : localizer[key];
-
+    var culture = ctx.Request.Query["culture"].FirstOrDefault()
+                  ?? CultureInfo.CurrentUICulture.Name;
+    var result  = localizer.GetWithCulture(key, culture);
     return Results.Ok(new
     {
-        Culture = CultureInfo.CurrentUICulture.Name,
-        Key     = key,
-        Message = message
+        Culture    = culture,
+        Key        = key,
+        Value      = result,
+        IsTranslated = result != key
     });
 }).RequireAuthorization();
 
-// KEY LİSTESİ
-app.MapGet("/api/keys", (IJsonStringLocalizer localizer) =>
+// KEY LİSTESİ (token zorunlu)
+app.MapGet("/api/keys", (HttpContext ctx, IJsonStringLocalizer localizer) =>
 {
-    var keys = localizer.GetAllKeys().OrderBy(k => k).ToList();
-    return Results.Ok(new
-    {
-        Culture = CultureInfo.CurrentUICulture.Name,
-        Count   = keys.Count,
-        Keys    = keys
-    });
+    var culture = ctx.Request.Query["culture"].FirstOrDefault()
+                  ?? CultureInfo.CurrentUICulture.Name;
+    var keys = localizer.GetAllKeysForCulture(culture).OrderBy(k => k).ToList();
+    return Results.Ok(new { Culture = culture, Count = keys.Count, Keys = keys });
 }).RequireAuthorization();
 
-// CACHE TEMİZLE (sadece Admin rolü)
+// YENİ KEY EKLE (sadece Admin)
+app.MapPost("/api/keys", async (HttpContext ctx, ClaimsPrincipal user, IJsonStringLocalizer localizer) =>
+{
+    if (user.FindFirst(ClaimTypes.Role)?.Value != "Admin")
+        return Results.Forbid();
+
+    AddKeyRequest? req;
+    try { req = await ctx.Request.ReadFromJsonAsync<AddKeyRequest>(); }
+    catch { return Results.BadRequest(new { Error = "Geçersiz JSON gövdesi." }); }
+
+    if (req is null || string.IsNullOrWhiteSpace(req.Key))
+        return Results.BadRequest(new { Error = "'key' alanı zorunludur." });
+
+    if (req.Translations is null || req.Translations.Count == 0)
+        return Results.BadRequest(new { Error = "'translations' alanı zorunludur." });
+
+    var results = new List<object>();
+    foreach (var (culture, value) in req.Translations)
+    {
+        var filePath = Path.Combine("Localization", $"{culture}.json");
+        if (!File.Exists(filePath))
+        {
+            results.Add(new { Culture = culture, Success = false, Error = "Dil dosyası bulunamadı." });
+            continue;
+        }
+
+        var json = await File.ReadAllTextAsync(filePath);
+        var dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json)
+                   ?? new Dictionary<string, string>();
+
+        dict[req.Key] = value;
+
+        var updated = System.Text.Json.JsonSerializer.Serialize(dict,
+            new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(filePath, updated);
+
+        JsonStringLocalizer.ClearCache(culture);
+        results.Add(new { Culture = culture, Success = true });
+    }
+
+    return Results.Ok(new { Key = req.Key, Results = results, AddedBy = user.Identity?.Name });
+}).RequireAuthorization();
+
+// CACHE TEMİZLE (sadece Admin)
 app.MapDelete("/api/cache", (string? culture, ClaimsPrincipal user) =>
 {
     if (user.FindFirst(ClaimTypes.Role)?.Value != "Admin")
@@ -209,57 +298,25 @@ app.MapDelete("/api/cache", (string? culture, ClaimsPrincipal user) =>
     JsonStringLocalizer.ClearCache(culture);
     return Results.Ok(new
     {
-        Message = culture != null
-            ? $"'{culture}' için cache temizlendi."
-            : "Tüm cache temizlendi.",
+        Message   = culture != null ? $"'{culture}' cache temizlendi." : "Tüm cache temizlendi.",
         ClearedBy = user.Identity?.Name
     });
 }).RequireAuthorization();
 
-// ESKİ ENDPOINTler (token korumalı)
-app.MapGet("/api/welcome", (IJsonStringLocalizer localizer) =>
-    Results.Ok(new
-    {
-        Culture = CultureInfo.CurrentUICulture.Name,
-        Message = localizer["Auth.Welcome", "Kullanıcı"]
-    })
-).RequireAuthorization();
-
-app.MapGet("/api/error-test", (string? code, IJsonStringLocalizer localizer) =>
-{
-    var errorCode = code ?? "400";
-    return Results.BadRequest(new
-    {
-        Culture      = CultureInfo.CurrentUICulture.Name,
-        ErrorCode    = errorCode,
-        ErrorMessage = localizer["Errors.Notice", errorCode]
-    });
-}).RequireAuthorization();
-
-app.MapGet("/api/order-status", (string? orderId, string? status, IJsonStringLocalizer localizer) =>
-{
-    var id            = orderId ?? "1001";
-    var currentStatus = status ?? "Hazırlanıyor";
-    return Results.Ok(new
-    {
-        Culture          = CultureInfo.CurrentUICulture.Name,
-        OrderId          = id,
-        Status           = currentStatus,
-        FormattedMessage = localizer["Orders.Updated", id, currentStatus]
-    });
-}).RequireAuthorization();
-
-app.MapGet("/api/cart", (int? count, decimal? total, IJsonStringLocalizer localizer) =>
-    Results.Ok(new
-    {
-        Culture = CultureInfo.CurrentUICulture.Name,
-        Message = localizer["Cart.Summary", count ?? 1, total ?? 100]
-    })
-).RequireAuthorization();
-
 app.Run();
 
 // ──────────────────────────────────────────────────────────────
-// MODEL
+// MODELLER
 // ──────────────────────────────────────────────────────────────
 record LoginRequest(string Username, string Password);
+
+record TranslateRequest(
+    string?                          Culture,
+    string[]                         Fields,
+    System.Text.Json.JsonElement?    Data
+);
+
+record AddKeyRequest(
+    string                      Key,
+    Dictionary<string, string>  Translations
+);
