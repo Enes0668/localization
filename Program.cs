@@ -1,11 +1,5 @@
 using System.Globalization;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Localization;
-using Microsoft.IdentityModel.Tokens;
 using LocalizationApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,45 +20,10 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod());
 });
 
-// JWT Ayarlarını appsettings.json'dan oku
-var jwtKey      = builder.Configuration["Jwt:Key"]!;
-var jwtIssuer   = builder.Configuration["Jwt:Issuer"]!;
-var jwtAudience = builder.Configuration["Jwt:Audience"]!;
-var jwtExpiry   = int.Parse(builder.Configuration["Jwt:ExpiryMinutes"]!);
-
-// JWT Authentication
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer           = true,
-            ValidateAudience         = true,
-            ValidateLifetime         = true,   // Token süresi dolmuşsa reddet
-            ValidateIssuerSigningKey = true,
-            ValidIssuer              = jwtIssuer,
-            ValidAudience            = jwtAudience,
-            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-            ClockSkew                = TimeSpan.Zero // Süre toleransını sıfırla
-        };
-    });
-
-builder.Services.AddAuthorization();
-
 var app = builder.Build();
 
 // ──────────────────────────────────────────────────────────────
-// 2. DEMO KULLANICILARI (Gerçek projede veritabanından gelir)
-// Şifre düz metin — production'da mutlaka hash kullanılır!
-// ──────────────────────────────────────────────────────────────
-var users = new Dictionary<string, (string Password, string Role)>
-{
-    { "admin", ("simplex", "Admin") }
-};
-
-// ──────────────────────────────────────────────────────────────
-// 3. MİDDLEWARE SIRASI — ÖNEMLİ!
-// UseRequestLocalization → UseAuthentication → UseAuthorization
+// 2. MİDDLEWARE
 // ──────────────────────────────────────────────────────────────
 var supportedCultures = new[]
 {
@@ -80,11 +39,9 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 });
 
 app.UseCors();
-app.UseAuthentication(); // JWT token'ı oku ve doğrula
-app.UseAuthorization();  // Yetkiyi kontrol et
 
 // ──────────────────────────────────────────────────────────────
-// 4. ENDPOINTler
+// 3. ENDPOINTLER
 // ──────────────────────────────────────────────────────────────
 
 // API Bilgilendirme (Kök dizin ve /api/info)
@@ -97,53 +54,18 @@ app.MapGet("/", () => Results.Ok(new
     {
         Translate = "POST /api/translate  →  Objeyi al, çevir, geri ver",
         LocalizeKey = "GET  /api/localize/{key}?culture=tr-TR  →  Tek anahtar çevir",
-        Keys = "GET  /api/keys?culture=tr-TR  →  Tüm anahtarları listele"
+        Keys = "GET  /api/keys?culture=tr-TR  →  Tüm anahtarları listele",
+        AddKey = "POST /api/keys  →  Yeni anahtar ekle",
+        ClearCache = "DELETE /api/cache  →  Önbelleği temizle"
     }
 }));
 
 app.MapGet("/api/info", () => Results.Redirect("/"));
 
 // ──────────────────────────────────────────────────────────────
-// AUTH ENDPOINTLERİ (herkese açık)
-// ──────────────────────────────────────────────────────────────
-
-app.MapPost("/auth/login", (LoginRequest req) =>
-{
-    if (!users.TryGetValue(req.Username, out var user) || user.Password != req.Password)
-        return Results.Unauthorized();
-
-    var claims = new[]
-    {
-        new Claim(ClaimTypes.Name, req.Username),
-        new Claim(ClaimTypes.Role, user.Role),
-        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-    };
-
-    var key   = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
-    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-    var token = new JwtSecurityToken(jwtIssuer, jwtAudience, claims,
-        expires: DateTime.UtcNow.AddMinutes(jwtExpiry), signingCredentials: creds);
-
-    return Results.Ok(new
-    {
-        Token     = new JwtSecurityTokenHandler().WriteToken(token),
-        ExpiresIn = $"{jwtExpiry} dakika",
-        Username  = req.Username,
-        Role      = user.Role
-    });
-});
-
-app.MapGet("/auth/me", (ClaimsPrincipal user) => Results.Ok(new
-{
-    Username        = user.Identity?.Name,
-    Role            = user.FindFirst(ClaimTypes.Role)?.Value,
-    IsAuthenticated = user.Identity?.IsAuthenticated
-})).RequireAuthorization();
-
-// ──────────────────────────────────────────────────────────────
-// ANA ENDPOINT: OBJE ÇEVİRİCİ (token zorunlu)
+// ANA ENDPOINT: OBJE ÇEVİRİCİ (herkese açık)
 // POST /api/translate
-// Body: { culture, fields: ["message","processInfo.message"], data: { ... } }
+// Body: { culture, data: { ... } }
 // ──────────────────────────────────────────────────────────────
 app.MapPost("/api/translate", async (HttpContext ctx, IJsonStringLocalizer localizer) =>
 {
@@ -272,12 +194,9 @@ app.MapGet("/api/keys", (HttpContext ctx, IJsonStringLocalizer localizer) =>
     return Results.Ok(new { Culture = culture, Count = keys.Count, Keys = keys });
 });
 
-// YENİ KEY EKLE (sadece Admin)
-app.MapPost("/api/keys", async (HttpContext ctx, ClaimsPrincipal user, IJsonStringLocalizer localizer) =>
+// YENİ KEY EKLE (herkese açık)
+app.MapPost("/api/keys", async (HttpContext ctx, IJsonStringLocalizer localizer) =>
 {
-    if (user.FindFirst(ClaimTypes.Role)?.Value != "Admin")
-        return Results.Forbid();
-
     AddKeyRequest? req;
     try { req = await ctx.Request.ReadFromJsonAsync<AddKeyRequest>(); }
     catch { return Results.BadRequest(new { Error = "Geçersiz JSON gövdesi." }); }
@@ -325,30 +244,24 @@ app.MapPost("/api/keys", async (HttpContext ctx, ClaimsPrincipal user, IJsonStri
     });
     await File.WriteAllTextAsync(filePath, updatedJson);
 
-    return Results.Ok(new { Key = req.Key, Results = results, AddedBy = user.Identity?.Name });
-}).RequireAuthorization();
+    return Results.Ok(new { Key = req.Key, Results = results });
+});
 
-// CACHE TEMİZLE (sadece Admin)
-app.MapDelete("/api/cache", (string? culture, ClaimsPrincipal user) =>
+// CACHE TEMİZLE (herkese açık)
+app.MapDelete("/api/cache", (string? culture) =>
 {
-    if (user.FindFirst(ClaimTypes.Role)?.Value != "Admin")
-        return Results.Forbid();
-
     JsonStringLocalizer.ClearCache(culture);
     return Results.Ok(new
     {
-        Message   = culture != null ? $"'{culture}' cache temizlendi." : "Tüm cache temizlendi.",
-        ClearedBy = user.Identity?.Name
+        Message = culture != null ? $"'{culture}' cache temizlendi." : "Tüm cache temizlendi."
     });
-}).RequireAuthorization();
+});
 
 app.Run();
 
 // ──────────────────────────────────────────────────────────────
 // MODELLER
 // ──────────────────────────────────────────────────────────────
-record LoginRequest(string Username, string Password);
-
 record TranslateRequest(
     string?                          Culture,
     string[]?                        Fields,
