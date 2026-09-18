@@ -25,15 +25,16 @@ var app = builder.Build();
 // ──────────────────────────────────────────────────────────────
 // 2. MİDDLEWARE
 // ──────────────────────────────────────────────────────────────
-var supportedCultures = new[]
-{
-    new CultureInfo("tr-TR"),
-    new CultureInfo("en-US")
-};
+var defaultCulture   = builder.Configuration["LocalizationConfig:DefaultCulture"] ?? "tr-TR";
+var culturesFromConfig = builder.Configuration
+    .GetSection("LocalizationConfig:SupportedCultures")
+    .Get<string[]>() ?? new[] { "tr-TR", "en-US" };
+
+var supportedCultures = culturesFromConfig.Select(c => new CultureInfo(c)).ToArray();
 
 app.UseRequestLocalization(new RequestLocalizationOptions
 {
-    DefaultRequestCulture = new RequestCulture("tr-TR"),
+    DefaultRequestCulture = new RequestCulture(defaultCulture),
     SupportedCultures     = supportedCultures,
     SupportedUICultures   = supportedCultures
 });
