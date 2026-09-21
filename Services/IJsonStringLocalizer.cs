@@ -28,4 +28,9 @@ public interface IJsonStringLocalizer
     /// Key bulunamazsa key'in kendisini döner.
     /// </summary>
     string GetWithCulture(string key, string culture, params object[] arguments);
+
+    /// <summary>
+    /// localization.json içinde tanımlı tüm dilleri (kök anahtarları) döner.
+    /// </summary>
+    IEnumerable<string> GetSupportedCultures();
 }

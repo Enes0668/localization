@@ -117,17 +117,29 @@ public class JsonStringLocalizer : IJsonStringLocalizer
         }
     }
 
+    public IEnumerable<string> GetSupportedCultures()
+    {
+        var filePath = Path.Combine(_localizationPath, "localization.json");
+        if (!File.Exists(filePath)) return new[] { "tr", "en" };
+
+        try
+        {
+            var json = File.ReadAllText(filePath);
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.EnumerateObject().Select(p => p.Name).ToList();
+        }
+        catch
+        {
+            return new[] { "tr", "en" };
+        }
+    }
+
     public static string NormalizeCulture(string? cultureName)
     {
         if (string.IsNullOrWhiteSpace(cultureName))
             return "tr";
 
-        var code = cultureName.Split('-')[0].ToLowerInvariant();
-        return code switch
-        {
-            "en" => "en",
-            _    => "tr"
-        };
+        return cultureName.Split('-')[0].ToLowerInvariant();
     }
 
     private Dictionary<string, string> GetDictionaryForCulture(string cultureName)

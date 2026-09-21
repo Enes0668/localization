@@ -25,22 +25,13 @@ var app = builder.Build();
 // ──────────────────────────────────────────────────────────────
 // 2. MİDDLEWARE
 // ──────────────────────────────────────────────────────────────
-var defaultCulture   = builder.Configuration["LocalizationConfig:DefaultCulture"] ?? "tr-TR";
-var culturesFromConfig = builder.Configuration
-    .GetSection("LocalizationConfig:SupportedCultures")
-    .Get<string[]>() ?? new[] { "tr-TR", "en-US" };
-
 var defaultFields = builder.Configuration
     .GetSection("LocalizationConfig:DefaultFields")
     .Get<string[]>() ?? Array.Empty<string>();
 
-var supportedCultures = culturesFromConfig.Select(c => new CultureInfo(c)).ToArray();
-
 app.UseRequestLocalization(new RequestLocalizationOptions
 {
-    DefaultRequestCulture = new RequestCulture(defaultCulture),
-    SupportedCultures     = supportedCultures,
-    SupportedUICultures   = supportedCultures
+    DefaultRequestCulture = new RequestCulture("tr-TR")
 });
 
 app.UseCors();
@@ -50,11 +41,11 @@ app.UseCors();
 // ──────────────────────────────────────────────────────────────
 
 // API Bilgilendirme (Kök dizin ve /api/info)
-app.MapGet("/", () => Results.Ok(new
+app.MapGet("/", (IJsonStringLocalizer localizer) => Results.Ok(new
 {
     Service = "Localization API — Response Transformer",
     Status = "Running",
-    SupportedCultures = culturesFromConfig,
+    SupportedCultures = localizer.GetSupportedCultures(),
     DefaultFields = defaultFields,
     Endpoints = new
     {
