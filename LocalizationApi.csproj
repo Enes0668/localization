@@ -4,6 +4,14 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- NuGet Paket Bilgileri -->
+    <IsPackable>true</IsPackable>
+    <PackageId>Simplex.Localization.Middleware</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>SimplexBT</Authors>
+    <Description>ASP.NET Core Boru Hattı için Otomatik JSON Yanıt Yerelleştirme (Localization) Middleware Paketi</Description>
+    <PackageTags>localization;middleware;aspnetcore;json;translate</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
