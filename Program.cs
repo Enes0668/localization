@@ -30,6 +30,10 @@ var culturesFromConfig = builder.Configuration
     .GetSection("LocalizationConfig:SupportedCultures")
     .Get<string[]>() ?? new[] { "tr-TR", "en-US" };
 
+var defaultFields = builder.Configuration
+    .GetSection("LocalizationConfig:DefaultFields")
+    .Get<string[]>() ?? Array.Empty<string>();
+
 var supportedCultures = culturesFromConfig.Select(c => new CultureInfo(c)).ToArray();
 
 app.UseRequestLocalization(new RequestLocalizationOptions
@@ -50,7 +54,8 @@ app.MapGet("/", () => Results.Ok(new
 {
     Service = "Localization API — Response Transformer",
     Status = "Running",
-    SupportedCultures = new[] { "tr-TR (tr)", "en-US (en)" },
+    SupportedCultures = culturesFromConfig,
+    DefaultFields = defaultFields,
     Endpoints = new
     {
         Translate = "POST /api/translate  →  Objeyi al, çevir, geri ver",
@@ -90,72 +95,104 @@ app.MapPost("/api/translate", async (HttpContext ctx, IJsonStringLocalizer local
     var translated = new List<object>();
     var notFound   = new List<string>();
 
-    if (req.Fields is null || req.Fields.Length == 0)
+    bool TryTranslateField(string fieldPath, bool reportNotFound)
     {
-        // fields belirtilmemişse tüm JSON içindeki string değerleri otomatik çevir
-        void TranslateRecursive(System.Text.Json.Nodes.JsonNode? currentNode, string currentPath = "")
+        var parts   = fieldPath.Split('.');
+        var current = node;
+
+        for (int i = 0; i < parts.Length - 1; i++)
         {
-            if (currentNode is System.Text.Json.Nodes.JsonObject obj)
+            current = current?[parts[i]];
+            if (current is null) break;
+        }
+
+        if (current is null)
+        {
+            if (reportNotFound) notFound.Add(fieldPath);
+            return false;
+        }
+
+        var lastKey  = parts[^1];
+        var rawValue = current[lastKey]?.GetValue<string>();
+        if (rawValue is null)
+        {
+            if (reportNotFound) notFound.Add(fieldPath);
+            return false;
+        }
+
+        var localized = localizer.GetWithCulture(rawValue, cultureName);
+        if (localized != rawValue)
+        {
+            current[lastKey] = localized;
+            translated.Add(new { Field = fieldPath, From = rawValue, To = localized });
+            return true;
+        }
+        else
+        {
+            if (reportNotFound) notFound.Add(fieldPath + $" ('{rawValue}' key bulunamadı)");
+            return false;
+        }
+    }
+
+    void TranslateRecursive(System.Text.Json.Nodes.JsonNode? currentNode, string currentPath = "")
+    {
+        if (currentNode is System.Text.Json.Nodes.JsonObject obj)
+        {
+            foreach (var prop in obj.ToList())
             {
-                foreach (var prop in obj.ToList())
+                var childPath = string.IsNullOrEmpty(currentPath) ? prop.Key : $"{currentPath}.{prop.Key}";
+                if (prop.Value is System.Text.Json.Nodes.JsonValue val && val.TryGetValue<string>(out var strVal))
                 {
-                    var childPath = string.IsNullOrEmpty(currentPath) ? prop.Key : $"{currentPath}.{prop.Key}";
-                    if (prop.Value is System.Text.Json.Nodes.JsonValue val && val.TryGetValue<string>(out var strVal))
+                    var localized = localizer.GetWithCulture(strVal, cultureName);
+                    if (localized != strVal)
                     {
-                        var localized = localizer.GetWithCulture(strVal, cultureName);
-                        if (localized != strVal)
-                        {
-                            obj[prop.Key] = localized;
-                            translated.Add(new { Field = childPath, From = strVal, To = localized });
-                        }
-                    }
-                    else
-                    {
-                        TranslateRecursive(prop.Value, childPath);
+                        obj[prop.Key] = localized;
+                        translated.Add(new { Field = childPath, From = strVal, To = localized });
                     }
                 }
-            }
-            else if (currentNode is System.Text.Json.Nodes.JsonArray arr)
-            {
-                for (int i = 0; i < arr.Count; i++)
+                else
                 {
-                    TranslateRecursive(arr[i], $"{currentPath}[{i}]");
+                    TranslateRecursive(prop.Value, childPath);
+                }
+            }
+        }
+        else if (currentNode is System.Text.Json.Nodes.JsonArray arr)
+        {
+            for (int i = 0; i < arr.Count; i++)
+            {
+                TranslateRecursive(arr[i], $"{currentPath}[{i}]");
+            }
+        }
+    }
+
+    if (req.Fields is not null && req.Fields.Length > 0)
+    {
+        // İstekte açıkça fields belirtilmişse doğrudan onları işle
+        foreach (var fieldPath in req.Fields)
+        {
+            TryTranslateField(fieldPath, reportNotFound: true);
+        }
+    }
+    else
+    {
+        // İstekte fields belirtilmemiş:
+        // 1. Önce appsettings.json'daki DefaultFields tanımlarına bak
+        var matchedAnyDefault = false;
+        if (defaultFields.Length > 0)
+        {
+            foreach (var fieldPath in defaultFields)
+            {
+                if (TryTranslateField(fieldPath, reportNotFound: false))
+                {
+                    matchedAnyDefault = true;
                 }
             }
         }
 
-        TranslateRecursive(node);
-    }
-    else
-    {
-        foreach (var fieldPath in req.Fields)
+        // 2. Eğer DefaultFields eşleşmediyse tüm JSON içindeki string değerleri otomatik çevir
+        if (!matchedAnyDefault)
         {
-            var parts   = fieldPath.Split('.');
-            var current = node;
-
-            for (int i = 0; i < parts.Length - 1; i++)
-            {
-                current = current?[parts[i]];
-                if (current is null) break;
-            }
-
-            if (current is null) { notFound.Add(fieldPath); continue; }
-
-            var lastKey     = parts[^1];
-            var rawValue    = current[lastKey]?.GetValue<string>();
-            if (rawValue is null) { notFound.Add(fieldPath); continue; }
-
-            var localized = localizer.GetWithCulture(rawValue, cultureName);
-
-            if (localized != rawValue)
-            {
-                current[lastKey] = localized;
-                translated.Add(new { Field = fieldPath, From = rawValue, To = localized });
-            }
-            else
-            {
-                notFound.Add(fieldPath + $" ('{rawValue}' key bulunamadı)");
-            }
+            TranslateRecursive(node);
         }
     }
 
