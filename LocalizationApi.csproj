@@ -12,6 +12,8 @@
     <Authors>SimplexBT</Authors>
     <Description>ASP.NET Core Boru Hattı için Otomatik JSON Yanıt Yerelleştirme (Localization) Middleware Paketi</Description>
     <PackageTags>localization;middleware;aspnetcore;json;translate</PackageTags>
+    <RepositoryUrl>https://github.com/Enes0668/localization</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Enes0668/localization</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
