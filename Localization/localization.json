@@ -181,7 +181,8 @@
     "retry_in_{0}_seconds": "Retry in {0} seconds.",
     "Welcome back, {0}!": "Welcome back, {0}!",
     "File size exceeds limit of {0}MB.": "File size exceeds limit of {0}MB.",
-    "Showing {0} to {1} of {2} entries": "Showing {0} to {1} of {2} entries"
+    "Showing {0} to {1} of {2} entries": "Showing {0} to {1} of {2} entries",
+    "Order not found.": "Order not found."
   },
   "tr": {
     "ok": "Tamam",
@@ -365,6 +366,7 @@
     "retry_in_{0}_seconds": "{0} saniye içinde tekrar deneyiniz.",
     "Welcome back, {0}!": "Tekrar hoş geldiniz, {0}!",
     "File size exceeds limit of {0}MB.": "Dosya boyutu {0}MB sınırını aşıyor.",
-    "Showing {0} to {1} of {2} entries": "{2} kayıttan {0} - {1} arası gösteriliyor."
+    "Showing {0} to {1} of {2} entries": "{2} kayıttan {0} - {1} arası gösteriliyor.",
+    "Order not found.": "Sipariş bulunamadı."
   }
 }

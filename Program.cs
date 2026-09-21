@@ -1,6 +1,7 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
 using LocalizationApi.Services;
+using LocalizationApi.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +37,9 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 
 app.UseCors();
 
+// Otomatik HTTP Yanıt Yerelleştirme Middleware'i
+app.UseResponseLocalization();
+
 // ──────────────────────────────────────────────────────────────
 // 3. ENDPOINTLER
 // ──────────────────────────────────────────────────────────────
@@ -43,21 +47,48 @@ app.UseCors();
 // API Bilgilendirme (Kök dizin ve /api/info)
 app.MapGet("/", (IJsonStringLocalizer localizer) => Results.Ok(new
 {
-    Service = "Localization API — Response Transformer",
+    Service = "Localization Middleware & Transformer",
     Status = "Running",
     SupportedCultures = localizer.GetSupportedCultures(),
     DefaultFields = defaultFields,
+    Middleware = "Active (app.UseResponseLocalization())",
     Endpoints = new
     {
+        SampleOrder = "GET  /api/sample/order?culture=tr  →  Middleware otomatik ResponseValue.Message çevirir",
+        SampleError = "GET  /api/sample/error?culture=tr  →  Middleware otomatik Response.Texts.UserMessage çevirir",
         Translate = "POST /api/translate  →  Objeyi al, çevir, geri ver",
-        LocalizeKey = "GET  /api/localize/{key}?culture=tr-TR  →  Tek anahtar çevir",
-        Keys = "GET  /api/keys?culture=tr-TR  →  Tüm anahtarları listele",
+        LocalizeKey = "GET  /api/localize/{key}?culture=tr  →  Tek anahtar çevir",
+        Keys = "GET  /api/keys?culture=tr  →  Tüm anahtarları listele",
         AddKey = "POST /api/keys  →  Yeni anahtar ekle",
         ClearCache = "DELETE /api/cache  →  Önbelleği temizle"
     }
 }));
 
 app.MapGet("/api/info", () => Results.Redirect("/"));
+
+// ──────────────────────────────────────────────────────────────
+// DEMO ENDPOINTLERİ (ResponseLocalizationMiddleware Testi)
+// Normal bir backend controller'ının İngilizce döndüğü senaryo:
+// ──────────────────────────────────────────────────────────────
+app.MapGet("/api/sample/order", () => Results.Ok(new
+{
+    ResponseValue = new
+    {
+        Code = 200,
+        Message = "Payment was successful."
+    }
+}));
+
+app.MapGet("/api/sample/error", () => Results.Ok(new
+{
+    Response = new
+    {
+        Texts = new
+        {
+            UserMessage = "Order not found."
+        }
+    }
+}));
 
 // ──────────────────────────────────────────────────────────────
 // ANA ENDPOINT: OBJE ÇEVİRİCİ (herkese açık)
