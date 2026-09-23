@@ -1,0 +1,72 @@
+[
+  {
+    "ContainingType": "Enes3.Controllers.WeatherForecastController",
+    "Method": "Get",
+    "RelativePath": "WeatherForecast",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[Enes3.WeatherForecast, Enes3, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "Enes3.Controllers.WeatherForecastController",
+    "Method": "Get2",
+    "RelativePath": "WeatherForecast/Get2",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Enes3.Controllers.WeatherForecastController",
+    "Method": "Get3",
+    "RelativePath": "WeatherForecast/Get3",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Enes3.Controllers.WeatherForecastController",
+    "Method": "Get4",
+    "RelativePath": "WeatherForecast/Get4",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Enes3.Controllers.WeatherForecastController",
+    "Method": "Get5",
+    "RelativePath": "WeatherForecast/Get5",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Enes3.Controllers.WeatherForecastController",
+    "Method": "Get6",
+    "RelativePath": "WeatherForecast/Get6",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  }
+]
