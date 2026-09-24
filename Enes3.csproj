@@ -4,6 +4,17 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- NuGet Paket Bilgileri -->
+    <IsPackable>true</IsPackable>
+    <PackageId>Simplex.Localization.Middleware</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>SimplexBT</Authors>
+    <Company>SimplexBT</Company>
+    <Description>ASP.NET Core için Otomatik JSON Yanıt Yerelleştirme (Response Localization) Middleware Paketi</Description>
+    <PackageTags>localization;middleware;aspnetcore;json;translate</PackageTags>
+    <RepositoryUrl>https://github.com/Enes0668/localization</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/Enes0668/localization</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
