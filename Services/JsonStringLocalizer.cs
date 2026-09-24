@@ -1,39 +1,76 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
+using Enes3.Middlewares;
 
 namespace Enes3.Services;
 
 public class JsonStringLocalizer : IJsonStringLocalizer
 {
-    private readonly string _filePath;
-    private static readonly ConcurrentDictionary<string, Dictionary<string, string>> Cache = new();
+    private string? _filePath;
+    private string? _rawJsonContent;
+    private readonly Func<string>? _jsonProvider;
+    private readonly ConcurrentDictionary<string, Dictionary<string, string>> _cache = new();
 
-    public JsonStringLocalizer(string localizationPath)
+    /// <summary>
+    /// ResponseLocalizationOptions üzerinden yapılandırılan constructor.
+    /// JsonContent varsa doğrudan hafızadan çalışır, yoksa JsonFilePath'i kullanır.
+    /// </summary>
+    public JsonStringLocalizer(ResponseLocalizationOptions options)
     {
-        if (File.Exists(localizationPath))
+        _rawJsonContent = options.JsonContent;
+        _jsonProvider = options.JsonContentProvider;
+        _filePath = options.JsonFilePath;
+    }
+
+    /// <summary>
+    /// Doğrudan JSON string içeriği veya dosya yolu alan constructor.
+    /// Eğer gelen metin '{' veya '[' ile başlıyorsa doğrudan JSON içeriği olarak algılar (Veritabanı vb. için).
+    /// </summary>
+    public JsonStringLocalizer(string jsonContentOrPath, bool isContent = false)
+    {
+        if (isContent || LooksLikeJson(jsonContentOrPath))
         {
-            _filePath = localizationPath;
-        }
-        else if (Directory.Exists(localizationPath))
-        {
-            _filePath = Path.Combine(localizationPath, "localization.json");
+            _rawJsonContent = jsonContentOrPath;
         }
         else
         {
-            // Varsayılan göreceli yol
-            _filePath = Path.Combine(AppContext.BaseDirectory, "Localization", "localization.json");
-            if (!File.Exists(_filePath))
-            {
-                _filePath = Path.Combine(Directory.GetCurrentDirectory(), "Localization", "localization.json");
-            }
+            _filePath = ResolveFilePath(jsonContentOrPath);
         }
     }
 
+    /// <summary>
+    /// JSON içeriğini dinamik olarak getiren bir sağlayıcı fonksiyon (örn: veritabanı / redis / cache sorgusu).
+    /// </summary>
+    public JsonStringLocalizer(Func<string> jsonProvider)
+    {
+        _jsonProvider = jsonProvider;
+    }
+
     public JsonStringLocalizer(IWebHostEnvironment env)
-        : this(Path.Combine(env.ContentRootPath, "Localization", "localization.json"))
+        : this(Path.Combine(env.ContentRootPath, "Localization", "localization.json"), isContent: false)
     {
     }
+
+    public JsonStringLocalizer()
+        : this("Localization/localization.json", isContent: false)
+    {
+    }
+
+    /// <summary>
+    /// Doğrudan JSON string üzerinden bir localizer örneği oluşturur (Veritabanı, Redis vb. için).
+    /// </summary>
+    public static JsonStringLocalizer FromJson(string jsonContent) => new(jsonContent, isContent: true);
+
+    /// <summary>
+    /// Dosya yolundan bir localizer örneği oluşturur.
+    /// </summary>
+    public static JsonStringLocalizer FromFile(string filePath) => new(filePath, isContent: false);
+
+    /// <summary>
+    /// Dinamik sağlayıcı fonksiyon ile localizer örneği oluşturur.
+    /// </summary>
+    public static JsonStringLocalizer FromProvider(Func<string> provider) => new(provider);
 
     public string this[string key] => GetString(key);
 
@@ -80,10 +117,10 @@ public class JsonStringLocalizer : IJsonStringLocalizer
 
     public IEnumerable<string> GetSupportedCultures()
     {
-        if (!File.Exists(_filePath)) return new[] { "tr", "en" };
+        var json = GetJsonData();
+        if (string.IsNullOrWhiteSpace(json)) return new[] { "tr", "en" };
         try
         {
-            var json = File.ReadAllText(_filePath);
             using var doc = JsonDocument.Parse(json);
             return doc.RootElement.EnumerateObject().Select(p => p.Name).ToList();
         }
@@ -96,38 +133,103 @@ public class JsonStringLocalizer : IJsonStringLocalizer
         return cultureName.Split('-', ',')[0].Trim().ToLowerInvariant();
     }
 
+    /// <summary>
+    /// Çalışma zamanında JSON verisini güncellemek (örn: veritabanı değiştiğinde cache tazelemek) için.
+    /// </summary>
+    public void Reload(string newJsonContent)
+    {
+        _rawJsonContent = newJsonContent;
+        _cache.Clear();
+    }
+
+    public void ClearCache(string? cultureName = null)
+    {
+        if (cultureName != null)
+        {
+            var lang = NormalizeCulture(cultureName);
+            _cache.TryRemove(lang, out _);
+        }
+        else
+        {
+            _cache.Clear();
+        }
+    }
+
+    public static bool LooksLikeJson(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return false;
+        var trimmed = input.TrimStart();
+        return trimmed.StartsWith("{") || trimmed.StartsWith("[");
+    }
+
+    private string? GetJsonData()
+    {
+        // 1. Doğrudan verilmiş JSON içeriği (DB / Redis / String)
+        if (!string.IsNullOrWhiteSpace(_rawJsonContent))
+        {
+            return _rawJsonContent;
+        }
+
+        // 2. Dinamik sağlayıcı fonksiyon
+        if (_jsonProvider != null)
+        {
+            try
+            {
+                return _jsonProvider();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        // 3. Fiziksel dosya yolu
+        if (!string.IsNullOrWhiteSpace(_filePath) && File.Exists(_filePath))
+        {
+            try
+            {
+                return File.ReadAllText(_filePath);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
     private Dictionary<string, string> GetDictionaryForCulture(string cultureName)
     {
         var lang = NormalizeCulture(cultureName);
 
-        if (Cache.TryGetValue(lang, out var cachedDict))
+        if (_cache.TryGetValue(lang, out var cachedDict))
         {
             return cachedDict;
         }
 
-        if (File.Exists(_filePath))
+        var json = GetJsonData();
+        if (!string.IsNullOrWhiteSpace(json))
         {
             try
             {
-                var json = File.ReadAllText(_filePath);
                 using var document = JsonDocument.Parse(json);
-
                 if (document.RootElement.TryGetProperty(lang, out var langElement) &&
                     langElement.ValueKind == JsonValueKind.Object)
                 {
                     var dict = FlattenJson(langElement);
-                    Cache[lang] = dict;
+                    _cache[lang] = dict;
                     return dict;
                 }
             }
             catch
             {
-                // Parse hatası
+                // Parse hatası durumunda boş döner
             }
         }
 
         var emptyDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        Cache[lang] = emptyDict;
+        _cache[lang] = emptyDict;
         return emptyDict;
     }
 
@@ -155,16 +257,17 @@ public class JsonStringLocalizer : IJsonStringLocalizer
         return result;
     }
 
-    public static void ClearCache(string? cultureName = null)
+    private static string ResolveFilePath(string localizationPath)
     {
-        if (cultureName != null)
-        {
-            var lang = NormalizeCulture(cultureName);
-            Cache.TryRemove(lang, out _);
-        }
-        else
-        {
-            Cache.Clear();
-        }
+        if (File.Exists(localizationPath)) return localizationPath;
+        if (Directory.Exists(localizationPath)) return Path.Combine(localizationPath, "localization.json");
+
+        var baseDir = Path.Combine(AppContext.BaseDirectory, "Localization", "localization.json");
+        if (File.Exists(baseDir)) return baseDir;
+
+        var currDir = Path.Combine(Directory.GetCurrentDirectory(), "Localization", "localization.json");
+        if (File.Exists(currDir)) return currDir;
+
+        return localizationPath;
     }
 }

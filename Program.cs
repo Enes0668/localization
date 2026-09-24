@@ -23,14 +23,22 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Furkan Bey'in istediği parametrik kütüphane konfigürasyonu:
-// Kullanıcı header'da hangi key'e bakılacağını ("selectedLanguage", "lang", "Accept-Language") kendisi belirler.
+// Furkan Bey'in istediği esnek kütüphane konfigürasyonu:
+// 1. Header parametresi ("selectedLanguage", "lang", "Accept-Language")
+// 2. JSON veri kaynağı:
+//    - Doğrudan veritabanı/Redis/string'den: options.JsonContent = jsonFromDatabase;
+//    - Veya dinamik sağlayıcıdan: options.JsonContentProvider = () => db.GetTranslationsAsJson();
+//    - Veya fiziksel dosyadan: options.JsonFilePath = "Localization/localization.json";
 // ─────────────────────────────────────────────────────────────────────────────
 app.UseResponseLocalization(options =>
 {
     options.TargetPaths = new[] { "", "Message", "Log.LogMessage", "Log.LogMessage2" };
     options.HeaderName = "selectedLanguage"; // Parametrik başlık: "selectedLanguage", "lang" veya "Accept-Language"
     options.DefaultCulture = "tr";
+    options.JsonFilePath = "Localization/localization.json";
+
+    // İPUCU: Veritabanından veya Redis'ten veri alınıyorsa doğrudan JSON string atanabilir:
+    // options.JsonContent = await db.GetTranslationsJsonAsync();
 });
 
 app.UseAuthorization();

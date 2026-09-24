@@ -35,9 +35,21 @@ namespace Enes3.Middlewares
         public string DefaultCulture { get; set; } = "tr";
 
         /// <summary>
-        /// localization.json dosyasının konumu.
+        /// Doğrudan JSON metni (Veritabanından, Redis'ten veya harici servisten çekilen JSON string).
+        /// Eğer bu değer belirtilirse fiziksel dosya aranmaz, doğrudan bu veri kullanılır.
         /// </summary>
-        public string JsonFilePath { get; set; } = "Localization/localization.json";
+        public string? JsonContent { get; set; }
+
+        /// <summary>
+        /// JSON verisini dinamik olarak getiren sağlayıcı fonksiyon (örn: veritabanı veya önbellek sorgusu).
+        /// </summary>
+        public Func<string>? JsonContentProvider { get; set; }
+
+        /// <summary>
+        /// localization.json dosyasının fiziksel konumu (Fiziksel dosya kullanmak isteyenler için).
+        /// Varsayılan: "Localization/localization.json".
+        /// </summary>
+        public string? JsonFilePath { get; set; } = "Localization/localization.json";
 
         public ResponseLocalizationOptions() { }
 
@@ -75,9 +87,13 @@ namespace Enes3.Middlewares
 
         public ResponseLocalizationMiddleware(
             RequestDelegate next,
-            string jsonFilePath,
+            string jsonContentOrPath,
             string[] targetPaths)
-            : this(next, new JsonStringLocalizer(jsonFilePath), new ResponseLocalizationOptions(targetPaths) { JsonFilePath = jsonFilePath })
+            : this(next, new JsonStringLocalizer(jsonContentOrPath), new ResponseLocalizationOptions(targetPaths)
+            {
+                JsonContent = JsonStringLocalizer.LooksLikeJson(jsonContentOrPath) ? jsonContentOrPath : null,
+                JsonFilePath = JsonStringLocalizer.LooksLikeJson(jsonContentOrPath) ? null : jsonContentOrPath
+            })
         {
         }
 
@@ -259,6 +275,26 @@ namespace Enes3.Middlewares
 
     public static class ResponseLocalizationMiddlewareExtensions
     {
+        /// <summary>
+        /// ResponseLocalization servislerini Dependency Injection konteynerine ekler.
+        /// </summary>
+        public static IServiceCollection AddResponseLocalization(
+            this IServiceCollection services,
+            Action<ResponseLocalizationOptions>? configureOptions = null)
+        {
+            var options = new ResponseLocalizationOptions();
+            configureOptions?.Invoke(options);
+
+            services.AddSingleton(options);
+            services.AddSingleton<IJsonStringLocalizer>(sp =>
+            {
+                var opt = sp.GetService<ResponseLocalizationOptions>() ?? options;
+                return new JsonStringLocalizer(opt);
+            });
+
+            return services;
+        }
+
         public static IApplicationBuilder UseResponseLocalization(
             this IApplicationBuilder app,
             Action<ResponseLocalizationOptions> configureOptions)
@@ -266,8 +302,16 @@ namespace Enes3.Middlewares
             var options = new ResponseLocalizationOptions();
             configureOptions(options);
 
-            var localizer = app.ApplicationServices.GetService<IJsonStringLocalizer>()
-                            ?? new JsonStringLocalizer(options.JsonFilePath);
+            IJsonStringLocalizer localizer;
+            if (!string.IsNullOrWhiteSpace(options.JsonContent) || options.JsonContentProvider != null)
+            {
+                localizer = new JsonStringLocalizer(options);
+            }
+            else
+            {
+                localizer = app.ApplicationServices.GetService<IJsonStringLocalizer>()
+                            ?? new JsonStringLocalizer(options);
+            }
 
             return app.UseMiddleware<ResponseLocalizationMiddleware>(localizer, options);
         }
@@ -276,8 +320,16 @@ namespace Enes3.Middlewares
             this IApplicationBuilder app,
             ResponseLocalizationOptions options)
         {
-            var localizer = app.ApplicationServices.GetService<IJsonStringLocalizer>()
-                            ?? new JsonStringLocalizer(options.JsonFilePath);
+            IJsonStringLocalizer localizer;
+            if (!string.IsNullOrWhiteSpace(options.JsonContent) || options.JsonContentProvider != null)
+            {
+                localizer = new JsonStringLocalizer(options);
+            }
+            else
+            {
+                localizer = app.ApplicationServices.GetService<IJsonStringLocalizer>()
+                            ?? new JsonStringLocalizer(options);
+            }
 
             return app.UseMiddleware<ResponseLocalizationMiddleware>(localizer, options);
         }
@@ -292,10 +344,10 @@ namespace Enes3.Middlewares
 
         public static IApplicationBuilder UseResponseLocalization(
             this IApplicationBuilder app,
-            string jsonFilePath,
+            string jsonContentOrPath,
             string[] targetPaths)
         {
-            return app.UseMiddleware<ResponseLocalizationMiddleware>(jsonFilePath, targetPaths);
+            return app.UseMiddleware<ResponseLocalizationMiddleware>(jsonContentOrPath, targetPaths);
         }
     }
 }
