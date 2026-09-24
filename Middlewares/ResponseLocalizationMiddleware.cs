@@ -6,27 +6,78 @@ using Enes3.Services;
 
 namespace Enes3.Middlewares
 {
+    /// <summary>
+    /// ResponseLocalization middleware'i için yapılandırma seçenekleri.
+    /// </summary>
+    public class ResponseLocalizationOptions
+    {
+        /// <summary>
+        /// Çevrilmesi hedeflenen alan adları (örn: "", "Message", "Log.LogMessage").
+        /// </summary>
+        public string[] TargetPaths { get; set; } = Array.Empty<string>();
+
+        /// <summary>
+        /// İstek başlığında (Header) dil bilgisinin aranacağı anahtar. 
+        /// Varsayılan: "Accept-Language". Özel başlıklar için örn: "lang", "selectedLanguage", "X-Language".
+        /// </summary>
+        public string HeaderName { get; set; } = "Accept-Language";
+
+        /// <summary>
+        /// URL query string üzerinden dil parametresi aranacak anahtar (örn: ?culture=en veya ?lang=en).
+        /// Varsayılan: "culture".
+        /// </summary>
+        public string QueryParamName { get; set; } = "culture";
+
+        /// <summary>
+        /// İstekte herhangi bir dil başlığı bulunamazsa kullanılacak varsayılan dil kodu.
+        /// Varsayılan: "tr".
+        /// </summary>
+        public string DefaultCulture { get; set; } = "tr";
+
+        /// <summary>
+        /// localization.json dosyasının konumu.
+        /// </summary>
+        public string JsonFilePath { get; set; } = "Localization/localization.json";
+
+        public ResponseLocalizationOptions() { }
+
+        public ResponseLocalizationOptions(string[] targetPaths)
+        {
+            TargetPaths = targetPaths;
+        }
+    }
+
     public class ResponseLocalizationMiddleware
     {
         private readonly RequestDelegate _next;
         private readonly IJsonStringLocalizer _localizer;
+        private readonly ResponseLocalizationOptions _options;
         private readonly HashSet<string> _targetPaths;
 
         public ResponseLocalizationMiddleware(
             RequestDelegate next,
             IJsonStringLocalizer localizer,
-            string[] targetPaths)
+            ResponseLocalizationOptions options)
         {
             _next = next;
             _localizer = localizer;
-            _targetPaths = new HashSet<string>(targetPaths, StringComparer.OrdinalIgnoreCase);
+            _options = options;
+            _targetPaths = new HashSet<string>(options.TargetPaths, StringComparer.OrdinalIgnoreCase);
+        }
+
+        public ResponseLocalizationMiddleware(
+            RequestDelegate next,
+            IJsonStringLocalizer localizer,
+            string[] targetPaths)
+            : this(next, localizer, new ResponseLocalizationOptions(targetPaths))
+        {
         }
 
         public ResponseLocalizationMiddleware(
             RequestDelegate next,
             string jsonFilePath,
             string[] targetPaths)
-            : this(next, new JsonStringLocalizer(jsonFilePath), targetPaths)
+            : this(next, new JsonStringLocalizer(jsonFilePath), new ResponseLocalizationOptions(targetPaths) { JsonFilePath = jsonFilePath })
         {
         }
 
@@ -62,10 +113,8 @@ namespace Enes3.Middlewares
                     return;
                 }
 
-                // 3. İstemcinin istediği dili belirle:
-                var culture = context.Request.Query["culture"].FirstOrDefault()
-                              ?? context.Request.Headers["Accept-Language"].FirstOrDefault()
-                              ?? CultureInfo.CurrentUICulture.Name;
+                // 3. İstemcinin istediği dili parametrik ayarlara göre belirle:
+                var culture = GetCultureFromRequest(context, _options);
 
                 // 4. Doğrudan yerel JSON sözlüğü üzerinden bellekte (In-Memory) çevir:
                 var modifiedContent = ProcessResponse(responseBody, _targetPaths, _localizer, culture);
@@ -84,6 +133,36 @@ namespace Enes3.Middlewares
             {
                 context.Response.Body = originalBodyStream;
             }
+        }
+
+        private static string GetCultureFromRequest(HttpContext context, ResponseLocalizationOptions options)
+        {
+            // 1. Query string kontrolü (?culture=en veya ?lang=en)
+            if (!string.IsNullOrWhiteSpace(options.QueryParamName) &&
+                context.Request.Query.TryGetValue(options.QueryParamName, out var queryLang) &&
+                !string.IsNullOrWhiteSpace(queryLang))
+            {
+                return queryLang.ToString();
+            }
+
+            // 2. Kullanıcının config'de belirttiği Header'ı kontrol et (örn: "selectedLanguage", "lang", "Accept-Language")
+            if (!string.IsNullOrWhiteSpace(options.HeaderName) &&
+                context.Request.Headers.TryGetValue(options.HeaderName, out var headerLang) &&
+                !string.IsNullOrWhiteSpace(headerLang))
+            {
+                return headerLang.ToString();
+            }
+
+            // 3. Eğer özel bir header belirtilmiş ama istekte yoksa, standart Accept-Language'e fallback yap
+            if (!string.Equals(options.HeaderName, "Accept-Language", StringComparison.OrdinalIgnoreCase) &&
+                context.Request.Headers.TryGetValue("Accept-Language", out var standardLang) &&
+                !string.IsNullOrWhiteSpace(standardLang))
+            {
+                return standardLang.ToString();
+            }
+
+            // 4. Hiçbir dil bulunamazsa varsayılan dile dön
+            return options.DefaultCulture ?? CultureInfo.CurrentUICulture.Name;
         }
 
         private static string ProcessResponse(
@@ -180,6 +259,29 @@ namespace Enes3.Middlewares
 
     public static class ResponseLocalizationMiddlewareExtensions
     {
+        public static IApplicationBuilder UseResponseLocalization(
+            this IApplicationBuilder app,
+            Action<ResponseLocalizationOptions> configureOptions)
+        {
+            var options = new ResponseLocalizationOptions();
+            configureOptions(options);
+
+            var localizer = app.ApplicationServices.GetService<IJsonStringLocalizer>()
+                            ?? new JsonStringLocalizer(options.JsonFilePath);
+
+            return app.UseMiddleware<ResponseLocalizationMiddleware>(localizer, options);
+        }
+
+        public static IApplicationBuilder UseResponseLocalization(
+            this IApplicationBuilder app,
+            ResponseLocalizationOptions options)
+        {
+            var localizer = app.ApplicationServices.GetService<IJsonStringLocalizer>()
+                            ?? new JsonStringLocalizer(options.JsonFilePath);
+
+            return app.UseMiddleware<ResponseLocalizationMiddleware>(localizer, options);
+        }
+
         public static IApplicationBuilder UseResponseLocalization(
             this IApplicationBuilder app,
             IJsonStringLocalizer localizer,

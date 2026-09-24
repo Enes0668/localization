@@ -22,9 +22,16 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Baş mühendisin hedeflediği satır:
-var localization = app.Services.GetRequiredService<IJsonStringLocalizer>();
-app.UseMiddleware<ResponseLocalizationMiddleware>(localization, new[] { "", "Message", "Log.LogMessage", "Log.LogMessage2" });
+// ─────────────────────────────────────────────────────────────────────────────
+// Furkan Bey'in istediği parametrik kütüphane konfigürasyonu:
+// Kullanıcı header'da hangi key'e bakılacağını ("selectedLanguage", "lang", "Accept-Language") kendisi belirler.
+// ─────────────────────────────────────────────────────────────────────────────
+app.UseResponseLocalization(options =>
+{
+    options.TargetPaths = new[] { "", "Message", "Log.LogMessage", "Log.LogMessage2" };
+    options.HeaderName = "selectedLanguage"; // Parametrik başlık: "selectedLanguage", "lang" veya "Accept-Language"
+    options.DefaultCulture = "tr";
+});
 
 app.UseAuthorization();
 
