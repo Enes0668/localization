@@ -1,101 +1,83 @@
-# ASP.NET Core 8 JSON-Based Parametric Localization API
+# Simplex.Localization.Middleware
 
-Bu proje, **MVC kullanmadan (Minimal API)**, bağımsız bir dizindeki (`Localization/`) JSON dosyalarından dil verilerini okuyan, `Accept-Language` başlığı veya sorgu parametresine göre istemciye doğru dilde ve **parametrik yer tutucularla (`{0}`, `{1}`)** yanıt dönen bir referans projedir.
+ASP.NET Core uygulamaları için otomatik HTTP JSON yanıt yerelleştirme (Localization) ara yazılım kütüphanesi.
 
----
-
-## Proje Yapısı
-
-```
-LocalizationApi/
-│
-├── Localization/                 # Bağımsız localization dosyaları
-│   └── localization.json         # Tüm diller (en, tr) tek JSON dosyasında
-│
-├── Services/
-│   ├── IJsonStringLocalizer.cs   # Yerelleştirme servis sözleşmesi
-│   └── JsonStringLocalizer.cs    # JSON okuyan, cache''leyen ve {0} parametrelerini formatlayan servis
-│
-├── Program.cs                    # Minimal API endpoint''leri ve Middleware yapılandırması
-├── LocalizationApi.csproj        # Proje ayarları
-└── README.md                     # Dokümantasyon
-```
+Bu kütüphane, Controller veya Minimal API'lerin döndüğü JSON yanıtlarındaki metinleri araya girerek yakalar ve istenen dile (`?culture=tr` veya `Accept-Language` başlığına göre) otomatik olarak çevirir.
 
 ---
 
-## Nasıl Çalıştırılır?
+## Özellikler
 
-Proje dizininde terminali açın:
+* **Disk/Dosya Bağımsızlığı:** Çeviriler ister fiziksel bir `.json` dosyasından, ister **Veritabanından (SQL/PostgreSQL)**, ister **Redis** önbelleğinden saf `string` olarak verilebilir.
+* **Controller Bağımsızlığı:** Controller sınıflarınızda veya servislerinizde yerelleştirme için ekstra kod yazmanız gerekmez; Controller standart İngilizce yanıtını döner, middleware yanıtı kullanıcıya gitmeden önce otomatik çevirir.
+* **Yüksek Performans:** Çeviri verileri RAM'de önbelleğe alınır, her istekte tekrar tekrar ayrıştırma yapılmaz.
+* **Yalın Mimari:** Sadece 2 parametre ile tek satırda devreye alınır.
+
+---
+
+## Kurulum
+
+Projeye NuGet üzerinden paketi ekleyin:
+
 ```bash
-dotnet run
+dotnet add package Simplex.Localization.Middleware
 ```
-Uygulama varsayılan olarak `http://localhost:5000` (veya belirtilen port) üzerinde ayağa kalkacaktır.
 
 ---
 
-## Örnek İstekler ve Yanıtlar
+## Kullanım
 
-### 1. Parametrik Hata Mesajı Testi
-- **Şablon:** `"Aldığınız Hata: {0}. Dikkat ediniz."`
-- **Endpoint:** `GET /api/error-test?code=404`
+`Program.cs` dosyanızda middleware boru hattına tek bir satır eklemeniz yeterlidir:
 
-#### Türkçe İstek:
-```bash
-curl -H "Accept-Language: tr-TR" http://localhost:5000/api/error-test?code=404
+```csharp
+using LocalizationApi.Middleware;
+
+var app = builder.Build();
+
+// 1. PARAMETRE: Tüm Dillerin JSON metni (Veritabanından veya dosyadan okunan string)
+// 2. PARAMETRE: Çevrilmesini istediğiniz alanlar (Field listesi)
+string languagesJson = File.ReadAllText("Localization/localization.json"); // veya dbService.GetJson();
+
+app.UseResponseLocalization(languagesJson, "ResponseValue.Message", "Response.Texts.UserMessage");
+
+app.MapControllers();
+app.Run();
 ```
-**Yanıt (HTTP 400):**
-```json
+
+---
+
+## Örnek İstek ve Yanıt
+
+### Controller Kodu (Standart İngilizce):
+```csharp
+[HttpGet("order")]
+public IActionResult GetOrder()
 {
-  "culture": "tr-TR",
-  "errorCode": "404",
-  "errorMessage": "Aldığınız Hata: 404. Dikkat ediniz."
+    return Ok(new
+    {
+        ResponseValue = new
+        {
+            Code = 200,
+            Message = "Payment was successful."
+        }
+    });
 }
 ```
 
-#### İngilizce İstek:
-```bash
-curl -H "Accept-Language: en-US" http://localhost:5000/api/error-test?code=404
-```
-**Yanıt (HTTP 400):**
+### İstek:
+`GET /api/sample/order?culture=tr`
+
+### Kullanıcıya Dönen Yanıt (Otomatik Çevrilmiş):
 ```json
 {
-  "culture": "en-US",
-  "errorCode": "404",
-  "errorMessage": "The error you received: 404. Please pay attention."
-}
-```
-
----
-
-### 2. Çoklu Parametrik Yerelleştirme Testi
-- **Şablon:** `"Sipariş #{0} durumu ''{1}'' olarak güncellendi."`
-- **Endpoint:** `GET /api/order-status?orderId=9876&status=Shipped`
-
-#### İngilizce İstek:
-```bash
-curl -H "Accept-Language: en-US" "http://localhost:5000/api/order-status?orderId=9876&status=Shipped"
-```
-**Yanıt:**
-```json
-{
-  "culture": "en-US",
-  "orderId": "9876",
-  "status": "Shipped",
-  "formattedMessage": "Order #9876 status has been updated to 'Shipped'."
+  "responseValue": {
+    "code": 200,
+    "message": "Ödeme başarıyla gerçekleştirildi."
+  }
 }
 ```
 
 ---
 
-### 3. URL Query Parametresi ile Dil Belirleme
-Header gönderilmediğinde URL üzerinden de dil belirlenebilir:
-```bash
-curl "http://localhost:5000/api/welcome?culture=de-DE"
-```
-**Yanıt:**
-```json
-{
-  "culture": "de-DE",
-  "message": "Willkommen!"
-}
-```
+## Lisans
+MIT License - SimplexBT

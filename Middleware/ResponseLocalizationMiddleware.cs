@@ -1,72 +1,75 @@
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
-using LocalizationApi.Services;
 
 namespace LocalizationApi.Middleware;
 
 /// <summary>
-/// ASP.NET Core boru hattında (Pipeline) üretilen HTTP JSON yanıtlarını yakalayan
-/// ve yapılandırılmış alanları (DefaultFields) veya metinleri otomatik yerelleştiren ara yazılım.
+/// HTTP JSON Yanıtlarını araya girip yakalayan ve belirtilen alanları (fields) 
+/// verilen dillere (languagesJson) göre otomatik çeviren Middleware.
+/// 
+/// 1. PARAMETRE: TÜM DİLLER (TR, EN) -> JSON metni
+/// 2. PARAMETRE: FİELD -> Çevrilecek alanlar listesi (Örn: "ResponseValue.Message")
 /// </summary>
 public class ResponseLocalizationMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly IJsonStringLocalizer _localizer;
-    private readonly string[] _defaultFields;
+    private readonly string[] _fields;
+
+    // RAM'de saklanan çeviriler: "tr" -> { "Payment was successful.": "Ödeme başarıyla gerçekleştirildi." }
+    private readonly Dictionary<string, Dictionary<string, string>> _translations = new(StringComparer.OrdinalIgnoreCase);
 
     public ResponseLocalizationMiddleware(
         RequestDelegate next,
-        IJsonStringLocalizer localizer,
-        IConfiguration configuration)
+        string languagesJson,
+        string[] fields)
     {
         _next = next;
-        _localizer = localizer;
-        _defaultFields = configuration
-            .GetSection("LocalizationConfig:DefaultFields")
-            .Get<string[]>() ?? Array.Empty<string>();
+        _fields = fields ?? Array.Empty<string>();
+
+        // 1. Parametreden gelen diller JSON metnini bir kez okuyup RAM'e alıyoruz
+        LoadTranslations(languagesJson);
     }
 
     public async Task InvokeAsync(HttpContext context)
     {
         // Swagger ve statik dosya isteklerini pas geç
-        if (context.Request.Path.StartsWithSegments("/swagger") ||
-            context.Request.Path.Value?.EndsWith(".html") == true ||
-            context.Request.Path.Value?.EndsWith(".js") == true ||
-            context.Request.Path.Value?.EndsWith(".css") == true)
+        if (IsStaticOrSwaggerRequest(context))
         {
             await _next(context);
             return;
         }
 
+        // Response akışını geçici olarak MemoryStream'e yönlendiriyoruz
         var originalBodyStream = context.Response.Body;
         using var memoryStream = new MemoryStream();
         context.Response.Body = memoryStream;
 
         try
         {
+            // Controller çalışsın ve yanıtını bizim MemoryStream'e yazsın
             await _next(context);
 
             memoryStream.Seek(0, SeekOrigin.Begin);
 
-            var contentType = context.Response.ContentType;
-            var isJson = contentType != null && contentType.Contains("application/json", StringComparison.OrdinalIgnoreCase);
+            bool isJson = context.Response.ContentType != null &&
+                          context.Response.ContentType.Contains("application/json", StringComparison.OrdinalIgnoreCase);
 
             if (isJson && memoryStream.Length > 0)
             {
                 using var reader = new StreamReader(memoryStream, Encoding.UTF8, leaveOpen: true);
-                var rawJson = await reader.ReadToEndAsync();
+                string rawJson = await reader.ReadToEndAsync();
 
-                // Dil tespiti: Query string (?culture=) > Accept-Language header > Thread kültürü
-                var cultureName = context.Request.Query["culture"].FirstOrDefault()
-                                  ?? context.Request.Headers["Accept-Language"].FirstOrDefault()
-                                  ?? CultureInfo.CurrentUICulture.Name;
+                // İstekten hedef dili al (Örn: ?culture=tr)
+                string cultureName = GetRequestedCulture(context);
 
-                var translatedJson = TranslateJson(rawJson, cultureName);
+                // JSON'daki belirtilen alanları çevir
+                string translatedJson = TranslateJson(rawJson, cultureName);
 
-                var bytes = Encoding.UTF8.GetBytes(translatedJson);
-                context.Response.ContentLength = bytes.Length;
-                await originalBodyStream.WriteAsync(bytes, 0, bytes.Length);
+                byte[] translatedBytes = Encoding.UTF8.GetBytes(translatedJson);
+                context.Response.ContentLength = translatedBytes.Length;
+                await originalBodyStream.WriteAsync(translatedBytes, 0, translatedBytes.Length);
             }
             else
             {
@@ -76,93 +79,101 @@ public class ResponseLocalizationMiddleware
         }
         finally
         {
+            // Orijinal akışı geri koyuyoruz
             context.Response.Body = originalBodyStream;
         }
     }
 
+    /// <summary>
+    /// 1. Parametre olarak gelen JSON metnini ayrıştırır ve RAM'e sözlük olarak kaydeder.
+    /// </summary>
+    private void LoadTranslations(string languagesJson)
+    {
+        if (string.IsNullOrWhiteSpace(languagesJson)) return;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(languagesJson);
+
+            foreach (var langProp in doc.RootElement.EnumerateObject())
+            {
+                string language = NormalizeCulture(langProp.Name);
+
+                if (langProp.Value.ValueKind == JsonValueKind.Object)
+                {
+                    var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    FlattenJson(langProp.Value, dict);
+                    _translations[language] = dict;
+                }
+            }
+        }
+        catch
+        {
+            // JSON formatı geçersizse boş bırak
+        }
+    }
+
+    /// <summary>
+    /// İç içe JSON nesnelerini nokta notasyonuyla düzleştirir.
+    /// </summary>
+    private static void FlattenJson(JsonElement element, Dictionary<string, string> dict, string prefix = "")
+    {
+        foreach (var property in element.EnumerateObject())
+        {
+            string currentKey = string.IsNullOrEmpty(prefix)
+                ? property.Name
+                : $"{prefix}.{property.Name}";
+
+            if (property.Value.ValueKind == JsonValueKind.Object)
+            {
+                FlattenJson(property.Value, dict, currentKey);
+            }
+            else if (property.Value.ValueKind == JsonValueKind.String)
+            {
+                dict[currentKey] = property.Value.GetString() ?? currentKey;
+            }
+        }
+    }
+
+    /// <summary>
+    /// JSON içindeki belirtilen alanları (fields) bulup istenen dile çevirir.
+    /// </summary>
     private string TranslateJson(string json, string cultureName)
     {
+        string language = NormalizeCulture(cultureName);
+
+        // İlgili dil için sözlüğümüz yoksa orijinal JSON'ı dön
+        if (!_translations.TryGetValue(language, out var dictionary))
+        {
+            return json;
+        }
+
         try
         {
             var node = JsonNode.Parse(json);
-            if (node is null) return json;
+            if (node == null) return json;
 
-            bool TryTranslateField(string fieldPath)
+            bool matchedAnyField = false;
+
+            // 2. Parametrede verilen alanları (fields) ara ve çevir
+            if (_fields.Length > 0)
             {
-                var parts   = fieldPath.Split('.');
-                var current = node;
-
-                for (int i = 0; i < parts.Length - 1; i++)
+                foreach (string fieldPath in _fields)
                 {
-                    current = current?[parts[i]];
-                    if (current is null) break;
-                }
-
-                if (current is null) return false;
-
-                var lastKey  = parts[^1];
-                var rawValue = current[lastKey]?.GetValue<string>();
-                if (rawValue is null) return false;
-
-                var localized = _localizer.GetWithCulture(rawValue, cultureName);
-                if (localized != rawValue)
-                {
-                    current[lastKey] = localized;
-                    return true;
-                }
-
-                return false;
-            }
-
-            void TranslateRecursive(JsonNode? currentNode)
-            {
-                if (currentNode is JsonObject obj)
-                {
-                    foreach (var prop in obj.ToList())
+                    if (TryTranslateSpecificField(node, fieldPath, dictionary))
                     {
-                        if (prop.Value is JsonValue val && val.TryGetValue<string>(out var strVal))
-                        {
-                            var localized = _localizer.GetWithCulture(strVal, cultureName);
-                            if (localized != strVal)
-                            {
-                                obj[prop.Key] = localized;
-                            }
-                        }
-                        else
-                        {
-                            TranslateRecursive(prop.Value);
-                        }
-                    }
-                }
-                else if (currentNode is JsonArray arr)
-                {
-                    for (int i = 0; i < arr.Count; i++)
-                    {
-                        TranslateRecursive(arr[i]);
+                        matchedAnyField = true;
                     }
                 }
             }
 
-            // 1. Önce DefaultFields yollarına bak (ResponseValue.Message, Response.Texts.UserMessage vb.)
-            var matchedAny = false;
-            if (_defaultFields.Length > 0)
+            // Eğer özel bir field eşleşmediyse veya field verilmediyse JSON içindeki metinleri tara
+            if (!matchedAnyField)
             {
-                foreach (var field in _defaultFields)
-                {
-                    if (TryTranslateField(field))
-                    {
-                        matchedAny = true;
-                    }
-                }
+                TranslateAllStringsRecursive(node, dictionary);
             }
 
-            // 2. DefaultFields yoksa veya eşleşmediyse rekürsif tarama yap
-            if (!matchedAny)
-            {
-                TranslateRecursive(node);
-            }
-
-            return node.ToJsonString(new System.Text.Json.JsonSerializerOptions
+            return node.ToJsonString(new JsonSerializerOptions
             {
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
                 WriteIndented = true
@@ -170,7 +181,92 @@ public class ResponseLocalizationMiddleware
         }
         catch
         {
-            return json; // Parse hatası durumunda orijinal çıktıyı bozma
+            return json;
         }
+    }
+
+    private static bool TryTranslateSpecificField(JsonNode rootNode, string fieldPath, Dictionary<string, string> dictionary)
+    {
+        string[] parts = fieldPath.Split('.');
+        JsonNode? currentNode = rootNode;
+
+        for (int i = 0; i < parts.Length - 1; i++)
+        {
+            currentNode = currentNode?[parts[i]];
+            if (currentNode == null) return false;
+        }
+
+        if (currentNode == null) return false;
+
+        string lastKey = parts[parts.Length - 1];
+        string? rawValue = currentNode[lastKey]?.GetValue<string>();
+
+        if (string.IsNullOrEmpty(rawValue)) return false;
+
+        if (dictionary.TryGetValue(rawValue, out string? localizedValue))
+        {
+            currentNode[lastKey] = localizedValue;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static void TranslateAllStringsRecursive(JsonNode? currentNode, Dictionary<string, string> dictionary)
+    {
+        if (currentNode is JsonObject jsonObject)
+        {
+            foreach (var property in jsonObject.ToList())
+            {
+                if (property.Value is JsonValue jsonValue && jsonValue.TryGetValue<string>(out string? textValue))
+                {
+                    if (!string.IsNullOrEmpty(textValue) && dictionary.TryGetValue(textValue, out string? localized))
+                    {
+                        jsonObject[property.Key] = localized;
+                    }
+                }
+                else
+                {
+                    TranslateAllStringsRecursive(property.Value, dictionary);
+                }
+            }
+        }
+        else if (currentNode is JsonArray jsonArray)
+        {
+            for (int i = 0; i < jsonArray.Count; i++)
+            {
+                TranslateAllStringsRecursive(jsonArray[i], dictionary);
+            }
+        }
+    }
+
+    private static string GetRequestedCulture(HttpContext context)
+    {
+        string? queryCulture = context.Request.Query["culture"].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(queryCulture))
+            return queryCulture;
+
+        string? headerCulture = context.Request.Headers["Accept-Language"].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(headerCulture))
+            return headerCulture;
+
+        return CultureInfo.CurrentUICulture.Name;
+    }
+
+    private static string NormalizeCulture(string cultureName)
+    {
+        if (string.IsNullOrWhiteSpace(cultureName)) return "tr";
+        return cultureName.Split('-')[0].ToLowerInvariant();
+    }
+
+    private static bool IsStaticOrSwaggerRequest(HttpContext context)
+    {
+        string? path = context.Request.Path.Value;
+        if (string.IsNullOrEmpty(path)) return false;
+
+        return path.StartsWith("/swagger", StringComparison.OrdinalIgnoreCase) ||
+               path.EndsWith(".html", StringComparison.OrdinalIgnoreCase) ||
+               path.EndsWith(".js", StringComparison.OrdinalIgnoreCase) ||
+               path.EndsWith(".css", StringComparison.OrdinalIgnoreCase);
     }
 }
