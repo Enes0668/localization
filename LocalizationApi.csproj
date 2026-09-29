@@ -17,9 +17,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="TestApp\**" />
+    <Content Remove="TestApp\**" />
+    <EmbeddedResource Remove="TestApp\**" />
+    <None Remove="TestApp\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Update="Localization\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
   </ItemGroup>
 
 </Project>

@@ -7,14 +7,12 @@ namespace LocalizationApi.Middleware;
 
 /// <summary>
 /// HTTP JSON Yanıtlarını araya girip yakalayan ve belirtilen alanları (fields) 
-/// verilen dillere (languagesJson) göre otomatik çeviren Middleware.
-/// 
-/// 1. PARAMETRE: TÜM DİLLER (TR, EN) -> JSON metni
-/// 2. PARAMETRE: FİELD -> Çevrilecek alanlar listesi (Örn: "ResponseValue.Message")
+/// verilen dillere (languagesJson) ve istenen dil anahtarına (languageKey: örn. "lang") göre otomatik çeviren Middleware.
 /// </summary>
 public class ResponseLocalizationMiddleware
 {
     private readonly RequestDelegate _next;
+    private readonly string _languageKey;
     private readonly string[] _fields;
 
     // RAM'de saklanan çeviriler: "tr" -> { "Payment was successful.": "Ödeme başarıyla gerçekleştirildi." }
@@ -23,13 +21,23 @@ public class ResponseLocalizationMiddleware
     public ResponseLocalizationMiddleware(
         RequestDelegate next,
         string languagesJson,
+        string languageKey,
         string[] fields)
     {
         _next = next;
+        _languageKey = string.IsNullOrWhiteSpace(languageKey) ? "lang" : languageKey;
         _fields = fields ?? Array.Empty<string>();
 
         // 1. Parametreden gelen diller JSON metnini bir kez okuyup RAM'e alıyoruz
         LoadTranslations(languagesJson);
+    }
+
+    public ResponseLocalizationMiddleware(
+        RequestDelegate next,
+        string languagesJson,
+        string[] fields)
+        : this(next, languagesJson, "lang", fields)
+    {
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -61,7 +69,7 @@ public class ResponseLocalizationMiddleware
                 using var reader = new StreamReader(memoryStream, Encoding.UTF8, leaveOpen: true);
                 string rawJson = await reader.ReadToEndAsync();
 
-                // İstekten hedef dili al (Örn: ?culture=tr)
+                // İstekten hedef dili al (_languageKey üzerinden örn: ?lang=tr veya lang: tr)
                 string cultureName = GetRequestedCulture(context);
 
                 // JSON'daki belirtilen alanları çevir
@@ -155,7 +163,7 @@ public class ResponseLocalizationMiddleware
 
             bool matchedAnyField = false;
 
-            // 2. Parametrede verilen alanları (fields) ara ve çevir
+            // Parametrede verilen alanları (fields) ara ve çevir
             if (_fields.Length > 0)
             {
                 foreach (string fieldPath in _fields)
@@ -240,12 +248,28 @@ public class ResponseLocalizationMiddleware
         }
     }
 
-    private static string GetRequestedCulture(HttpContext context)
+    /// <summary>
+    /// İstekten hedef dili okur.
+    /// Öncelik: Belirtilen languageKey (örn: ?lang=tr veya Header: lang: tr) -> ?culture= -> Accept-Language -> Sistem dili
+    /// </summary>
+    private string GetRequestedCulture(HttpContext context)
     {
+        // 1. Kullanıcının belirlediği özel anahtar (Örn: ?lang=tr)
+        string? queryLang = context.Request.Query[_languageKey].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(queryLang))
+            return queryLang;
+
+        // 2. Kullanıcının belirlediği özel Header (Örn: lang: tr)
+        string? headerLang = context.Request.Headers[_languageKey].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(headerLang))
+            return headerLang;
+
+        // 3. Standart ?culture= query parametresi
         string? queryCulture = context.Request.Query["culture"].FirstOrDefault();
         if (!string.IsNullOrWhiteSpace(queryCulture))
             return queryCulture;
 
+        // 4. Standart Accept-Language başlığı
         string? headerCulture = context.Request.Headers["Accept-Language"].FirstOrDefault();
         if (!string.IsNullOrWhiteSpace(headerCulture))
             return headerCulture;

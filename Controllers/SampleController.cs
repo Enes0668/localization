@@ -8,11 +8,11 @@ public class SampleController : ControllerBase
 {
     /// <summary>
     /// Otomatik çeviri testi (Sipariş senaryosu)
-    /// Backend İngilizce döner, middleware istenen dile (?culture=tr) çevirir.
-    /// GET /api/sample/order?culture=tr
+    /// Backend İngilizce döner, middleware istenen dile (?lang=tr) çevirir.
+    /// GET /api/sample/order?lang=tr
     /// </summary>
     [HttpGet("order")]
-    public IActionResult GetSampleOrder()
+    public IActionResult GetSampleOrder([FromQuery] string? lang = "tr")
     {
         return Ok(new
         {
@@ -26,10 +26,10 @@ public class SampleController : ControllerBase
 
     /// <summary>
     /// Otomatik çeviri testi (Hata senaryosu)
-    /// GET /api/sample/error?culture=tr
+    /// GET /api/sample/error?lang=tr
     /// </summary>
     [HttpGet("error")]
-    public IActionResult GetSampleError()
+    public IActionResult GetSampleError([FromQuery] string? lang = "tr")
     {
         return Ok(new
         {

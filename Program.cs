@@ -8,6 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 // ──────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
 
+// Swagger desteği ekleniyor
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -17,6 +21,10 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Swagger arayüzü (/swagger)
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // ──────────────────────────────────────────────────────────────
 // 2. MIDDLEWARE BORU HATTI
@@ -28,11 +36,11 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 
 app.UseCors();
 
-// 1. PARAMETRE: Tüm diller (TR, EN) -> JSON metni (Veritabanından veya dosyadan)
+// 1. PARAMETRE: Tüm diller (TR, EN) -> JSON metni
 // 2. PARAMETRE: Çevrilecek alanlar (Field listesi)
 string languagesJson = File.ReadAllText(Path.Combine("Localization", "localization.json"));
 
-app.UseResponseLocalization(languagesJson, "ResponseValue.Message", "Response.Texts.UserMessage");
+app.UseResponseLocalization(languagesJson, "lang","ResponseValue.Message", "Response.Texts.UserMessage");
 
 // ──────────────────────────────────────────────────────────────
 // 3. CONTROLLER YÖNLENDİRMESİ
