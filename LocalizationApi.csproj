@@ -8,7 +8,7 @@
     <!-- NuGet Paket Bilgileri -->
     <IsPackable>true</IsPackable>
     <PackageId>Simplex.Localization.Middleware</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>SimplexBT</Authors>
     <Description>ASP.NET Core Boru Hattı için Otomatik JSON Yanıt Yerelleştirme (Localization) Middleware Paketi</Description>
     <PackageTags>localization;middleware;aspnetcore;json;translate</PackageTags>

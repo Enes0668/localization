@@ -105,13 +105,27 @@ public class ResponseLocalizationMiddleware
 
             foreach (var langProp in doc.RootElement.EnumerateObject())
             {
-                string language = NormalizeCulture(langProp.Name);
-
                 if (langProp.Value.ValueKind == JsonValueKind.Object)
                 {
                     var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     FlattenJson(langProp.Value, dict);
-                    _translations[language] = dict;
+
+                    string rawKey = langProp.Name.Trim().ToLowerInvariant();
+                    _translations[rawKey] = dict;
+
+                    // Alt çizgi ile tanımlandıysa tireli halini de ekle (örn: tr_tr -> tr-tr)
+                    string hyphenKey = rawKey.Replace('_', '-');
+                    if (!_translations.ContainsKey(hyphenKey))
+                    {
+                        _translations[hyphenKey] = dict;
+                    }
+
+                    // Kök dili de ekle (örn: "tr-tr" ise "tr" olarak da fallback ekle)
+                    string rootKey = rawKey.Split('-', '_')[0];
+                    if (!_translations.ContainsKey(rootKey))
+                    {
+                        _translations[rootKey] = dict;
+                    }
                 }
             }
         }
@@ -148,10 +162,10 @@ public class ResponseLocalizationMiddleware
     /// </summary>
     private string TranslateJson(string json, string cultureName)
     {
-        string language = NormalizeCulture(cultureName);
+        var dictionary = FindDictionary(cultureName);
 
         // İlgili dil için sözlüğümüz yoksa orijinal JSON'ı dön
-        if (!_translations.TryGetValue(language, out var dictionary))
+        if (dictionary == null)
         {
             return json;
         }
@@ -277,10 +291,33 @@ public class ResponseLocalizationMiddleware
         return CultureInfo.CurrentUICulture.Name;
     }
 
-    private static string NormalizeCulture(string cultureName)
+    /// <summary>
+    /// İstenen dil için en uygun sözlüğü bulur:
+    /// 1. Tam birebir eşleşme (örn: "tr-tr", "en-us", "turkish", "1")
+    /// 2. Alt çizgi / tire uyarlaması (örn: "tr_TR" -> "tr-tr")
+    /// 3. Kök dil fallback (örn: "tr-TR" -> "tr", "en-GB" -> "en")
+    /// </summary>
+    private Dictionary<string, string>? FindDictionary(string? requestedCulture)
     {
-        if (string.IsNullOrWhiteSpace(cultureName)) return "tr";
-        return cultureName.Split('-')[0].ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(requestedCulture)) return null;
+
+        string normalized = requestedCulture.Trim().ToLowerInvariant();
+
+        // 1. Adım: Birebir tam eşleşme
+        if (_translations.TryGetValue(normalized, out var dict))
+            return dict;
+
+        // 2. Adım: Alt çizgi / tire uyarlaması
+        string hyphen = normalized.Replace('_', '-');
+        if (_translations.TryGetValue(hyphen, out dict))
+            return dict;
+
+        // 3. Adım: Kök dile dönüş (Fallback)
+        string root = normalized.Split('-', '_')[0];
+        if (_translations.TryGetValue(root, out dict))
+            return dict;
+
+        return null;
     }
 
     private static bool IsStaticOrSwaggerRequest(HttpContext context)

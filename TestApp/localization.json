@@ -1,0 +1,10 @@
+{
+  "tr": {
+    "Payment was successful.": "Ödeme başarıyla gerçekleştirildi.",
+    "Order not found.": "Sipariş bulunamadı."
+  },
+  "en": {
+    "Payment was successful.": "Payment was successful.",
+    "Order not found.": "Order not found."
+  }
+}
