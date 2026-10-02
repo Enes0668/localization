@@ -42,4 +42,21 @@ public class SampleController : ControllerBase
             }
         });
     }
+
+    /// <summary>
+    /// Genel şirket sözlüğü testi (Login senaryosu)
+    /// GET /api/sample/login?lang=es veya ?lang=Spanish
+    /// </summary>
+    [HttpGet("login")]
+    public IActionResult GetLogin([FromQuery] string? lang = "es")
+    {
+        return Ok(new
+        {
+            ResponseValue = new
+            {
+                Code = 200,
+                Message = "Login"
+            }
+        });
+    }
 }

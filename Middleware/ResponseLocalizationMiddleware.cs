@@ -92,8 +92,39 @@ public class ResponseLocalizationMiddleware
         }
     }
 
+    private static readonly Dictionary<string, string[]> CommonLanguageAliases = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { "spanish", new[] { "es", "es-es", "es-la" } },
+        { "español", new[] { "es", "es-es" } },
+        { "es", new[] { "spanish", "es-es" } },
+        { "english", new[] { "en", "en-us", "en-gb" } },
+        { "en", new[] { "english", "en-us" } },
+        { "türkçe", new[] { "tr", "tr-tr", "turkce", "turkish" } },
+        { "turkce", new[] { "tr", "tr-tr", "türkçe", "turkish" } },
+        { "turkish", new[] { "tr", "tr-tr", "türkçe" } },
+        { "tr", new[] { "türkçe", "turkish", "tr-tr" } },
+        { "русский", new[] { "ru", "ru-ru", "russian" } },
+        { "russian", new[] { "ru", "ru-ru", "русский" } },
+        { "ru", new[] { "русский", "russian", "ru-ru" } },
+        { "o'zbekcha", new[] { "uz", "oz", "oz-oz", "uz-uz", "uzbek" } },
+        { "ozbekcha", new[] { "uz", "oz", "oz-oz", "uz-uz", "uzbek" } },
+        { "uzbek", new[] { "uz", "oz", "oz-oz", "uz-uz", "o'zbekcha" } },
+        { "german", new[] { "de", "de-de", "deutsch" } },
+        { "deutsch", new[] { "de", "de-de", "german" } },
+        { "de", new[] { "german", "deutsch", "de-de" } },
+        { "french", new[] { "fr", "fr-fr", "français" } },
+        { "français", new[] { "fr", "fr-fr", "french" } },
+        { "fr", new[] { "french", "français", "fr-fr" } },
+        { "italian", new[] { "it", "it-it", "italiano" } },
+        { "italiano", new[] { "it", "it-it", "italian" } },
+        { "it", new[] { "italian", "italiano", "it-it" } },
+        { "arabic", new[] { "ar", "ar-sa", "العربية" } },
+        { "ar", new[] { "arabic", "ar-sa" } }
+    };
+
     /// <summary>
     /// 1. Parametre olarak gelen JSON metnini ayrıştırır ve RAM'e sözlük olarak kaydeder.
+    /// Hem düz { "tr": {...} } hem de { "Languages": [...], "Messages": { "Spanish": {...} } } formatlarını destekler.
     /// </summary>
     private void LoadTranslations(string languagesJson)
     {
@@ -102,8 +133,41 @@ public class ResponseLocalizationMiddleware
         try
         {
             using var doc = JsonDocument.Parse(languagesJson);
+            var root = doc.RootElement;
 
-            foreach (var langProp in doc.RootElement.EnumerateObject())
+            // 1. Ekstra dil eşleştirmeleri (JSON içinde "Languages" listesi varsa otomatik oku)
+            var customAliases = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            if (root.TryGetProperty("Languages", out var languagesArray) && languagesArray.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in languagesArray.EnumerateArray())
+                {
+                    string? text = item.TryGetProperty("Text", out var t) ? t.GetString() : null;
+                    string? locale = item.TryGetProperty("LocaleCode", out var l) ? l.GetString() : null;
+
+                    if (!string.IsNullOrWhiteSpace(text) && !string.IsNullOrWhiteSpace(locale))
+                    {
+                        string normText = text.Trim().ToLowerInvariant();
+                        string normLocale = locale.Trim().ToLowerInvariant();
+
+                        if (!customAliases.ContainsKey(normText))
+                            customAliases[normText] = new List<string>();
+                        customAliases[normText].Add(normLocale);
+
+                        string rootLocale = normLocale.Split('-', '_')[0];
+                        customAliases[normText].Add(rootLocale);
+                    }
+                }
+            }
+
+            // 2. Çeviri gövdesini seç (Eğer JSON'da "Messages" bloğu varsa onu, yoksa root'u al)
+            JsonElement targetContainer = root;
+            if (root.TryGetProperty("Messages", out var messagesElem) && messagesElem.ValueKind == JsonValueKind.Object)
+            {
+                targetContainer = messagesElem;
+            }
+
+            // 3. Dilleri RAM'e yükle ve eşleştir
+            foreach (var langProp in targetContainer.EnumerateObject())
             {
                 if (langProp.Value.ValueKind == JsonValueKind.Object)
                 {
@@ -111,20 +175,24 @@ public class ResponseLocalizationMiddleware
                     FlattenJson(langProp.Value, dict);
 
                     string rawKey = langProp.Name.Trim().ToLowerInvariant();
-                    _translations[rawKey] = dict;
+                    RegisterDictionary(rawKey, dict);
 
-                    // Alt çizgi ile tanımlandıysa tireli halini de ekle (örn: tr_tr -> tr-tr)
-                    string hyphenKey = rawKey.Replace('_', '-');
-                    if (!_translations.ContainsKey(hyphenKey))
+                    // "Languages" dizisinden gelen eşleştirmeleri bağla (örn: Spanish -> es-ES, es)
+                    if (customAliases.TryGetValue(rawKey, out var aliases))
                     {
-                        _translations[hyphenKey] = dict;
+                        foreach (var alias in aliases)
+                        {
+                            RegisterDictionary(alias, dict);
+                        }
                     }
 
-                    // Kök dili de ekle (örn: "tr-tr" ise "tr" olarak da fallback ekle)
-                    string rootKey = rawKey.Split('-', '_')[0];
-                    if (!_translations.ContainsKey(rootKey))
+                    // Genel bilinen dilleri bağla (örn: Spanish -> es, es-es / Türkçe -> tr vb.)
+                    if (CommonLanguageAliases.TryGetValue(rawKey, out var builtInAliases))
                     {
-                        _translations[rootKey] = dict;
+                        foreach (var alias in builtInAliases)
+                        {
+                            RegisterDictionary(alias, dict);
+                        }
                     }
                 }
             }
@@ -132,6 +200,28 @@ public class ResponseLocalizationMiddleware
         catch
         {
             // JSON formatı geçersizse boş bırak
+        }
+    }
+
+    private void RegisterDictionary(string key, Dictionary<string, string> dict)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return;
+
+        string normalized = key.Trim().ToLowerInvariant();
+        _translations[normalized] = dict;
+
+        // Alt çizgi / tire türevlerini ekle (örn: es_es -> es-es)
+        string hyphen = normalized.Replace('_', '-');
+        if (!_translations.ContainsKey(hyphen))
+        {
+            _translations[hyphen] = dict;
+        }
+
+        // Kök dili ekle (örn: es-es -> es)
+        string root = normalized.Split('-', '_')[0];
+        if (!_translations.ContainsKey(root))
+        {
+            _translations[root] = dict;
         }
     }
 

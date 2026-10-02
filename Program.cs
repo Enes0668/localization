@@ -38,9 +38,12 @@ app.UseCors();
 
 // 1. PARAMETRE: Tüm diller (TR, EN) -> JSON metni
 // 2. PARAMETRE: Çevrilecek alanlar (Field listesi)
-string languagesJson = File.ReadAllText(Path.Combine("Localization", "localization.json"));
+string filePath = File.Exists("İspanyolca için güncel Localization.txt") 
+    ? "İspanyolca için güncel Localization.txt" 
+    : Path.Combine("Localization", "localization.json");
+string languagesJson = File.ReadAllText(filePath);
 
-app.UseResponseLocalization(languagesJson, "lang","ResponseValue.Message", "Response.Texts.UserMessage");
+app.UseResponseLocalization(languagesJson, "lang", "ResponseValue.Message", "Response.Texts.UserMessage");
 
 // ──────────────────────────────────────────────────────────────
 // 3. CONTROLLER YÖNLENDİRMESİ
